@@ -188,6 +188,20 @@
   pointer-events: none;
 }
 
+.ad-shot__frame-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  border-top-color: @accent;
+  border-radius: 50%;
+  animation: ad-spin 0.7s linear infinite;
+}
+
+@keyframes ad-spin {
+  to { transform: rotate(360deg); }
+}
+
 .ad-shot__frame-empty {
   width: 100%;
   aspect-ratio: 1;

@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
 import { generateSceneImage } from '../utils/imageApi';
 import './ScriptPage.less';
 
+type ShotsUpdater = (shots: Shot[]) => void;
+
 interface Props {
   character: Character;
   shots: Shot[];
-  onShotsChange: (shots: Shot[]) => void;
+  onShotsChange: ShotsUpdater;
   onGenerate: () => void;
   onBack: () => void;
 }
@@ -25,48 +27,68 @@ function buildImagePrompt(userPrompt: string, character: Character): string {
   return parts.join(', ');
 }
 
-interface FrameLoadingState {
-  start: boolean;
-  end: boolean;
-}
+interface FrameLoadingState { start: boolean; end: boolean; }
 
 export default function ScriptPage({ character, shots, onShotsChange, onGenerate, onBack }: Props) {
   const [showPresets, setShowPresets] = useState(false);
   const [frameLoading, setFrameLoading] = useState<Record<string, FrameLoadingState>>({});
-  const autoGenDone = useRef(false);
 
-  const updateShot = (id: string, update: Partial<Shot>) => {
-    onShotsChange(shots.map(s => s.id === id ? { ...s, ...update } : s));
-  };
 
   const updatePrompt = (id: string, prompt: string) => {
-    // Clear pre-generated frames when prompt changes
-    onShotsChange(shots.map(s => s.id === id ? { ...s, prompt, startImageUrl: undefined, endImageUrl: undefined } : s));
+    onShotsChange(shots.map(s => s.id === id
+      ? { ...s, prompt, startImageUrl: undefined, endImageUrl: undefined }
+      : s));
   };
 
-  const generateFrame = async (shot: Shot, type: 'start' | 'end') => {
-    if (!shot.prompt.trim()) return;
+  // Safe async frame generator — takes a latest-shots snapshot to avoid stale closure
+  const generateFrameFor = async (
+    shot: Shot,
+    currentShots: Shot[],
+    type: 'start' | 'end',
+    signal: { cancelled: boolean },
+  ) => {
+    if (!shot.prompt.trim() || signal.cancelled) return;
     setFrameLoading(prev => ({ ...prev, [shot.id]: { ...prev[shot.id], [type]: true } }));
     try {
       const prompt = buildImagePrompt(shot.prompt, character);
       const url = await generateSceneImage(prompt, character.head_url);
-      updateShot(shot.id, type === 'start' ? { startImageUrl: url } : { endImageUrl: url });
+      if (signal.cancelled) return;
+      onShotsChange(currentShots.map(s => s.id === shot.id
+        ? { ...s, [type === 'start' ? 'startImageUrl' : 'endImageUrl']: url }
+        : s));
     } catch {
       // silently fail — user can retry
     } finally {
-      setFrameLoading(prev => ({ ...prev, [shot.id]: { ...prev[shot.id], [type]: false } }));
+      if (!signal.cancelled) {
+        setFrameLoading(prev => ({ ...prev, [shot.id]: { ...prev[shot.id], [type]: false } }));
+      }
     }
   };
 
-  // Auto-generate start frames for all pre-filled shots on mount
+  // Wrapper for manual button clicks
+  const generateFrame = (shot: Shot, type: 'start' | 'end') => {
+    generateFrameFor(shot, shots, type, { cancelled: false });
+  };
+
+  // Auto-generate start frames for pre-filled shots on mount
+  // Uses cleanup to handle React StrictMode double-invoke correctly
   useEffect(() => {
-    if (autoGenDone.current) return;
-    autoGenDone.current = true;
-    shots
-      .filter(s => s.prompt.trim() && !s.startImageUrl)
-      .forEach(s => generateFrame(s, 'start'));
+    const signal = { cancelled: false };
+    const toGenerate = shots.filter(s => s.prompt.trim() && !s.startImageUrl);
+    toGenerate.forEach(shot => generateFrameFor(shot, shots, 'start', signal));
+    return () => { signal.cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-generate when template is applied (new shots with prompts but no images)
+  useEffect(() => {
+    const signal = { cancelled: false };
+    const toGenerate = shots.filter(s => s.prompt.trim() && !s.startImageUrl && !frameLoading[s.id]?.start);
+    if (toGenerate.length === 0) return;
+    toGenerate.forEach(shot => generateFrameFor(shot, shots, 'start', signal));
+    return () => { signal.cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shots.map(s => s.id).join(',')]);
 
   const addShot = () => {
     if (shots.length >= 5) return;
@@ -89,7 +111,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   return (
     <div className="ad-script">
-      {/* Header */}
       <div className="ad-script__header">
         <button className="ad-script__back" onPointerDown={onBack}>←</button>
         <div className="ad-script__char">
@@ -105,7 +126,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         </button>
       </div>
 
-      {/* Template picker */}
       {showPresets && (
         <div className="ad-templates">
           {DRAMA_TEMPLATES.map(t => (
@@ -117,7 +137,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         </div>
       )}
 
-      {/* Shot cards */}
       <div className="ad-shots">
         {shots.map((shot, i) => {
           const loading = frameLoading[shot.id] || { start: false, end: false };
@@ -132,7 +151,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                 placeholder="描述这个镜头的场景…"
                 rows={2}
               />
-              {/* Preset hints */}
               <div className="ad-shot__hints">
                 {SHOT_PRESETS.slice(i * 2, i * 2 + 2).map(p => (
                   <span key={p} className="ad-shot__hint" onPointerDown={() => updatePrompt(shot.id, p)}>
@@ -141,13 +159,13 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                 ))}
               </div>
 
-              {/* Frame preview row */}
               <div className="ad-shot__frames">
-                {/* Start frame */}
                 <div className="ad-shot__frame">
                   {shot.startImageUrl
                     ? <img className="ad-shot__frame-img" src={shot.startImageUrl} alt="首帧" draggable={false} />
-                    : <div className="ad-shot__frame-empty">首帧</div>
+                    : <div className="ad-shot__frame-empty">
+                        {loading.start ? <span className="ad-shot__frame-spinner" /> : '首帧'}
+                      </div>
                   }
                   <button
                     className="ad-shot__frame-btn"
@@ -158,11 +176,12 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                   </button>
                 </div>
 
-                {/* End frame */}
                 <div className="ad-shot__frame">
                   {shot.endImageUrl
                     ? <img className="ad-shot__frame-img" src={shot.endImageUrl} alt="尾帧" draggable={false} />
-                    : <div className="ad-shot__frame-empty ad-shot__frame-empty--dim">尾帧（可选）</div>
+                    : <div className="ad-shot__frame-empty ad-shot__frame-empty--dim">
+                        {loading.end ? <span className="ad-shot__frame-spinner" /> : '尾帧（可选）'}
+                      </div>
                   }
                   <button
                     className="ad-shot__frame-btn ad-shot__frame-btn--dim"
@@ -188,7 +207,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         )}
       </div>
 
-      {/* Generate */}
       <div className="ad-script__footer">
         <button
           className="ad-generate-btn"
