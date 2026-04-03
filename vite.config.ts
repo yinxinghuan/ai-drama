@@ -9,4 +9,13 @@ export default defineConfig({
       less: { javascriptEnabled: true },
     },
   },
+  server: {
+    proxy: {
+      '/api/image': {
+        target: 'http://aiservice.wdabuliu.com:8019',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/image/, ''),
+      },
+    },
+  },
 });

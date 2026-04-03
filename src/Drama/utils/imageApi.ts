@@ -1,4 +1,7 @@
-const IMAGE_API = 'http://aiservice.wdabuliu.com:8019/genl_image';
+// In dev, proxied via Vite to avoid CORS; in prod, direct call (same network/CORS allowed)
+const IMAGE_API = import.meta.env.DEV
+  ? '/api/image/genl_image'
+  : 'http://aiservice.wdabuliu.com:8019/genl_image';
 
 /** Generate a scene image using character head_url as reference (img2img) */
 export async function generateSceneImage(

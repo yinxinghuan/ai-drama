@@ -3,10 +3,7 @@ const COOLDOWN_MS = 100_000;
 
 let lastVideoCallTime = 0;
 
-/**
- * Wait until 100s has elapsed since last video call.
- * onTick is called every second with remaining seconds.
- */
+/** Wait until 100s has elapsed since last video call. onTick called each second with remaining. */
 export async function waitForVideoCooldown(onTick: (remaining: number) => void): Promise<void> {
   const elapsed = Date.now() - lastVideoCallTime;
   if (elapsed >= COOLDOWN_MS) return;
@@ -32,7 +29,7 @@ export function markVideoCallStart() {
 
 /**
  * Generate video using prompt_group for A→B→A (10s) motion.
- * Only start frame (imageUrl) is needed; no end frame.
+ * Returns: File is {"888": "url"} when using prompt_group.
  */
 export async function generateVideo(
   prompt: string,
@@ -57,7 +54,11 @@ export async function generateVideo(
   });
 
   if (!res.ok) throw new Error(`视频生成请求失败: ${res.status}`);
-  const data = await res.json() as { Flag: boolean; File: string };
+  const data = await res.json() as { Flag: boolean; File: string | Record<string, string> };
   if (!data.Flag || !data.File) throw new Error('生成失败，请重试');
-  return data.File;
+
+  // prompt_group mode returns File as {"888": "url"}, plain mode returns string
+  const fileUrl = typeof data.File === 'string' ? data.File : data.File['888'];
+  if (!fileUrl) throw new Error('视频 URL 解析失败');
+  return fileUrl;
 }
