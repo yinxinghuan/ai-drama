@@ -1,7 +1,8 @@
-// In dev, proxied via Vite to avoid CORS; in prod, direct call (same network/CORS allowed)
+// Dev: proxied via Vite to avoid CORS
+// Prod: Cloudflare Worker proxy (HTTPS)
 const IMAGE_API = import.meta.env.DEV
   ? '/api/image/genl_image'
-  : 'http://aiservice.wdabuliu.com:8019/genl_image';
+  : 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
 
 /** Generate a scene image using character head_url as reference (img2img) */
 export async function generateSceneImage(
