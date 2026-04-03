@@ -70,12 +70,17 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   ) => {
     if (!shot.prompt.trim() || signal.cancelled) return;
 
-    const prompt = buildImagePrompt(shot.prompt, character);
+    // End frame: emphasize the concluded state of the action; use start frame as ref for continuity
+    const basePrompt = buildImagePrompt(shot.prompt, character);
+    const prompt = type === 'end'
+      ? basePrompt + ', end of scene, action concluded, final moment, arrived'
+      : basePrompt;
+    const refUrl = type === 'end' && shot.startImageUrl ? shot.startImageUrl : character.head_url;
     const urlKey = type === 'start' ? 'startImageUrl' : 'endImageUrl';
 
     generateSceneImage(
       prompt,
-      character.head_url,
+      refUrl,
       () => { if (!signal.cancelled) setFrameState(shot.id, type, 'queued'); },
       () => { if (!signal.cancelled) setFrameState(shot.id, type, 'generating'); },
     ).then(url => {
