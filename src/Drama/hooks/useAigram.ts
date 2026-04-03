@@ -109,10 +109,19 @@ export function useAigram(): AigramState {
 
   useEffect(() => {
     if (!apiOrigin || !telegramId) {
-      setMe({ telegram_id: '0', name: '你', head_url: '', avatar_describe: undefined });
-      setContacts(DEMO_CONTACTS);
       setIsDemo(true);
-      setLoading(false);
+      // Auto-enrich demo contacts via public API
+      Promise.all(
+        DEMO_CONTACTS.map(c => fetchPublicUserByName(c.name).then(d => d ? {
+          ...c,
+          head_url: d.head_url || c.head_url,
+          avatar_describe: d.avatar_describe || c.avatar_describe,
+          style: d.style,
+        } : c))
+      ).then(enriched => {
+        setContacts(enriched);
+        setLoading(false);
+      });
       return;
     }
 
