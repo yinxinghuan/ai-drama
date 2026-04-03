@@ -31,12 +31,14 @@ interface FrameLoadingState { start: FrameState; end: FrameState; }
 function frameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
   if (state === 'generating') return '生成中…';
   if (state === 'queued') return cooldownLeft > 0 ? `冷却 ${cooldownLeft}s` : '排队中…';
+  if (cooldownLeft > 0) return `${cooldownLeft}s`;
   return hasImage ? '重新生成' : '生成首帧';
 }
 
 function endFrameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
   if (state === 'generating') return '生成中…';
   if (state === 'queued') return cooldownLeft > 0 ? `冷却 ${cooldownLeft}s` : '排队中…';
+  if (cooldownLeft > 0) return `${cooldownLeft}s`;
   return hasImage ? '重新生成' : '+ 尾帧';
 }
 
@@ -126,7 +128,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   const canGenerate = shots.some(s => s.prompt.trim().length > 0);
   const activeCount = shots.filter(s => s.prompt.trim()).length;
   const initials = character.name.slice(0, 2).toUpperCase();
-  const anyLoading = Object.values(frameLoading).some(f => f?.start !== 'idle' || f?.end !== 'idle');
 
   return (
     <div className="ad-script">
@@ -145,15 +146,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         </button>
       </div>
 
-      {/* Global cooldown banner */}
-      {anyLoading && (
-        <div className={`ad-cooldown-bar ${cooldownLeft > 0 ? 'ad-cooldown-bar--waiting' : ''}`}>
-          {cooldownLeft > 0
-            ? <><span className="ad-cooldown-bar__icon">⏳</span> 图片冷却中，{cooldownLeft}s 后继续排队</>
-            : <><span className="ad-cooldown-bar__spinner" /> 正在生成画面…</>
-          }
-        </div>
-      )}
 
       {showPresets && (
         <div className="ad-templates">
@@ -201,7 +193,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                   <button
                     className={`ad-shot__frame-btn ${loading.start === 'queued' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'start')}
-                    disabled={!hasPrompt || startBusy}
+                    disabled={!hasPrompt || startBusy || cooldownLeft > 0}
                   >
                     {frameLabel(loading.start, !!shot.startImageUrl, cooldownLeft)}
                   </button>
@@ -217,7 +209,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                   <button
                     className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end === 'queued' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'end')}
-                    disabled={!hasPrompt || endBusy}
+                    disabled={!hasPrompt || endBusy || cooldownLeft > 0}
                   >
                     {endFrameLabel(loading.end, !!shot.endImageUrl, cooldownLeft)}
                   </button>
