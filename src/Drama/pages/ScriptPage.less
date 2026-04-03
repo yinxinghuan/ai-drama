@@ -165,6 +165,67 @@
   &:active { border-color: @accent; color: @text; }
 }
 
+// Frame preview
+.ad-shot__frames {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ad-shot__frame {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ad-shot__frame-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  pointer-events: none;
+}
+
+.ad-shot__frame-empty {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px dashed @border;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: @accent;
+  font-weight: 600;
+
+  &--dim {
+    color: @text-dim;
+  }
+}
+
+.ad-shot__frame-btn {
+  width: 100%;
+  padding: 5px 0;
+  background: rgba(167,139,250,0.15);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: 8px;
+  color: @accent;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &--dim {
+    background: rgba(255,255,255,0.04);
+    border-color: @border;
+    color: @text-dim;
+  }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
 .ad-shot__remove {
   position: absolute;
   top: 10px;

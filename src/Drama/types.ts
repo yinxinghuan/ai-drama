@@ -12,7 +12,8 @@ export interface Shot {
   id: string;
   prompt: string;
   status: ShotStatus;
-  sceneImageUrl?: string; // intermediate generated scene image
+  startImageUrl?: string; // pre-generated start frame
+  endImageUrl?: string;   // optional pre-generated end frame
   waitSeconds?: number;   // cooldown countdown before video generation
   videoUrl?: string;
   error?: string;

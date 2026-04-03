@@ -3,7 +3,6 @@ const COOLDOWN_MS = 100_000;
 
 let lastVideoCallTime = 0;
 
-/** Wait until 100s has elapsed since last video call. onTick called each second with remaining. */
 export async function waitForVideoCooldown(onTick: (remaining: number) => void): Promise<void> {
   const elapsed = Date.now() - lastVideoCallTime;
   if (elapsed >= COOLDOWN_MS) return;
@@ -15,10 +14,7 @@ export async function waitForVideoCooldown(onTick: (remaining: number) => void):
     const interval = setInterval(() => {
       remaining--;
       onTick(remaining);
-      if (remaining <= 0) {
-        clearInterval(interval);
-        resolve();
-      }
+      if (remaining <= 0) { clearInterval(interval); resolve(); }
     }, 1000);
   });
 }
@@ -28,28 +24,25 @@ export function markVideoCallStart() {
 }
 
 /**
- * Generate video using prompt_group for A→B→A (10s) motion.
- * Returns: File is {"888": "url"} when using prompt_group.
+ * Generate video.
+ * - With endImageUrl: explicit start→end frame mode (prompt + image_url + end_image_url)
+ * - Without endImageUrl: prompt_group A→B→A auto mode (only start frame needed)
  */
 export async function generateVideo(
   prompt: string,
-  imageUrl: string,
+  startImageUrl: string,
+  endImageUrl?: string,
 ): Promise<string> {
   const id = 'drama_' + Math.random().toString(36).slice(2, 10);
+
+  const params = endImageUrl
+    ? { prompt, env: 'test', id, image_url: startImageUrl, end_image_url: endImageUrl, oss_url: '' }
+    : { prompt_group: { '888': prompt }, env: 'test', id, image_url: startImageUrl, end_image_url: '', oss_url: '' };
+
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: '',
-      params: {
-        prompt_group: { '888': prompt },
-        env: 'test',
-        id,
-        image_url: imageUrl,
-        end_image_url: '',
-        oss_url: '',
-      },
-    }),
+    body: JSON.stringify({ query: '', params }),
     signal: AbortSignal.timeout(180_000),
   });
 

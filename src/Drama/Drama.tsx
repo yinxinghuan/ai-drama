@@ -48,10 +48,13 @@ export default function Drama() {
   const generateShot = useCallback(async (shot: Shot, char: Character) => {
     const prompt = buildPrompt(shot.prompt, char);
     try {
-      // Step 1: generate scene image (img2img with character as ref)
-      updateShot(shot.id, { status: 'imaging' });
-      const sceneImageUrl = await generateSceneImage(prompt, char.head_url);
-      updateShot(shot.id, { sceneImageUrl });
+      // Step 1: generate start frame if not pre-generated in script phase
+      let startUrl = shot.startImageUrl;
+      if (!startUrl) {
+        updateShot(shot.id, { status: 'imaging' });
+        startUrl = await generateSceneImage(prompt, char.head_url);
+        updateShot(shot.id, { startImageUrl: startUrl });
+      }
 
       // Step 2: wait for video cooldown (100s between calls)
       updateShot(shot.id, { status: 'waiting' });
@@ -59,10 +62,11 @@ export default function Drama() {
         updateShot(shot.id, { waitSeconds: remaining });
       });
 
-      // Step 3: generate video from scene image using prompt_group (A→B→A, 10s)
+      // Step 3: generate video
+      // With endImageUrl: explicit start→end mode; without: prompt_group A→B→A auto mode
       markVideoCallStart();
       updateShot(shot.id, { status: 'generating' });
-      const videoUrl = await generateVideo(prompt, sceneImageUrl);
+      const videoUrl = await generateVideo(prompt, startUrl, shot.endImageUrl);
       updateShot(shot.id, { status: 'done', videoUrl });
     } catch (err) {
       updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
