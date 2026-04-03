@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
-import { generateSceneImage } from '../utils/imageApi';
+import { generateSceneImage, subscribeCooldown } from '../utils/imageApi';
 import './ScriptPage.less';
-
-type ShotsUpdater = (shots: Shot[]) => void;
 
 interface Props {
   character: Character;
   shots: Shot[];
-  onShotsChange: ShotsUpdater;
+  onShotsChange: (shots: Shot[]) => void;
   onGenerate: () => void;
   onBack: () => void;
 }
@@ -27,12 +25,32 @@ function buildImagePrompt(userPrompt: string, character: Character): string {
   return parts.join(', ');
 }
 
-interface FrameLoadingState { start: boolean; end: boolean; }
+type FrameState = 'idle' | 'queued' | 'generating';
+interface FrameLoadingState { start: FrameState; end: FrameState; }
+
+function frameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
+  if (state === 'generating') return '生成中…';
+  if (state === 'queued') return cooldownLeft > 0 ? `冷却 ${cooldownLeft}s` : '排队中…';
+  return hasImage ? '重新生成' : '生成首帧';
+}
+
+function endFrameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
+  if (state === 'generating') return '生成中…';
+  if (state === 'queued') return cooldownLeft > 0 ? `冷却 ${cooldownLeft}s` : '排队中…';
+  return hasImage ? '重新生成' : '+ 尾帧';
+}
 
 export default function ScriptPage({ character, shots, onShotsChange, onGenerate, onBack }: Props) {
   const [showPresets, setShowPresets] = useState(false);
   const [frameLoading, setFrameLoading] = useState<Record<string, FrameLoadingState>>({});
+  const [cooldownLeft, setCooldownLeft] = useState(0);
 
+  // Subscribe to global image API cooldown
+  useEffect(() => subscribeCooldown(setCooldownLeft), []);
+
+  const setFrameState = (id: string, type: 'start' | 'end', state: FrameState) => {
+    setFrameLoading(prev => ({ ...prev, [id]: { ...prev[id], [type]: state } }));
+  };
 
   const updatePrompt = (id: string, prompt: string) => {
     onShotsChange(shots.map(s => s.id === id
@@ -40,52 +58,52 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       : s));
   };
 
-  // Safe async frame generator — takes a latest-shots snapshot to avoid stale closure
-  const generateFrameFor = async (
+  const generateFrameFor = (
     shot: Shot,
     currentShots: Shot[],
     type: 'start' | 'end',
     signal: { cancelled: boolean },
   ) => {
     if (!shot.prompt.trim() || signal.cancelled) return;
-    setFrameLoading(prev => ({ ...prev, [shot.id]: { ...prev[shot.id], [type]: true } }));
-    try {
-      const prompt = buildImagePrompt(shot.prompt, character);
-      const url = await generateSceneImage(prompt, character.head_url);
+
+    const prompt = buildImagePrompt(shot.prompt, character);
+    const urlKey = type === 'start' ? 'startImageUrl' : 'endImageUrl';
+
+    generateSceneImage(
+      prompt,
+      character.head_url,
+      () => { if (!signal.cancelled) setFrameState(shot.id, type, 'queued'); },
+      () => { if (!signal.cancelled) setFrameState(shot.id, type, 'generating'); },
+    ).then(url => {
       if (signal.cancelled) return;
-      onShotsChange(currentShots.map(s => s.id === shot.id
-        ? { ...s, [type === 'start' ? 'startImageUrl' : 'endImageUrl']: url }
-        : s));
-    } catch {
+      onShotsChange(currentShots.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
+    }).catch(() => {
       // silently fail — user can retry
-    } finally {
-      if (!signal.cancelled) {
-        setFrameLoading(prev => ({ ...prev, [shot.id]: { ...prev[shot.id], [type]: false } }));
-      }
-    }
+    }).finally(() => {
+      if (!signal.cancelled) setFrameState(shot.id, type, 'idle');
+    });
   };
 
-  // Wrapper for manual button clicks
   const generateFrame = (shot: Shot, type: 'start' | 'end') => {
     generateFrameFor(shot, shots, type, { cancelled: false });
   };
 
-  // Auto-generate start frames for pre-filled shots on mount
-  // Uses cleanup to handle React StrictMode double-invoke correctly
+  // Auto-generate start frames for pre-filled shots on mount (StrictMode-safe)
   useEffect(() => {
     const signal = { cancelled: false };
-    const toGenerate = shots.filter(s => s.prompt.trim() && !s.startImageUrl);
-    toGenerate.forEach(shot => generateFrameFor(shot, shots, 'start', signal));
+    shots.filter(s => s.prompt.trim() && !s.startImageUrl)
+      .forEach(shot => generateFrameFor(shot, shots, 'start', signal));
     return () => { signal.cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-generate when template is applied (new shots with prompts but no images)
+  // Auto-generate when template applied (shot ids change)
   useEffect(() => {
     const signal = { cancelled: false };
-    const toGenerate = shots.filter(s => s.prompt.trim() && !s.startImageUrl && !frameLoading[s.id]?.start);
-    if (toGenerate.length === 0) return;
-    toGenerate.forEach(shot => generateFrameFor(shot, shots, 'start', signal));
+    const toGen = shots.filter(s => s.prompt.trim() && !s.startImageUrl
+      && (!frameLoading[s.id] || frameLoading[s.id].start === 'idle'));
+    if (toGen.length === 0) return;
+    toGen.forEach(shot => generateFrameFor(shot, shots, 'start', signal));
     return () => { signal.cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shots.map(s => s.id).join(',')]);
@@ -108,6 +126,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   const canGenerate = shots.some(s => s.prompt.trim().length > 0);
   const activeCount = shots.filter(s => s.prompt.trim()).length;
   const initials = character.name.slice(0, 2).toUpperCase();
+  const anyLoading = Object.values(frameLoading).some(f => f?.start !== 'idle' || f?.end !== 'idle');
 
   return (
     <div className="ad-script">
@@ -126,6 +145,16 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         </button>
       </div>
 
+      {/* Global cooldown banner */}
+      {anyLoading && (
+        <div className={`ad-cooldown-bar ${cooldownLeft > 0 ? 'ad-cooldown-bar--waiting' : ''}`}>
+          {cooldownLeft > 0
+            ? <><span className="ad-cooldown-bar__icon">⏳</span> 图片冷却中，{cooldownLeft}s 后继续排队</>
+            : <><span className="ad-cooldown-bar__spinner" /> 正在生成画面…</>
+          }
+        </div>
+      )}
+
       {showPresets && (
         <div className="ad-templates">
           {DRAMA_TEMPLATES.map(t => (
@@ -139,8 +168,10 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
       <div className="ad-shots">
         {shots.map((shot, i) => {
-          const loading = frameLoading[shot.id] || { start: false, end: false };
+          const loading = frameLoading[shot.id] ?? { start: 'idle', end: 'idle' };
           const hasPrompt = shot.prompt.trim().length > 0;
+          const startBusy = loading.start !== 'idle';
+          const endBusy = loading.end !== 'idle';
           return (
             <div key={shot.id} className="ad-shot">
               <div className="ad-shot__num">镜头 {i + 1}</div>
@@ -163,32 +194,32 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                 <div className="ad-shot__frame">
                   {shot.startImageUrl
                     ? <img className="ad-shot__frame-img" src={shot.startImageUrl} alt="首帧" draggable={false} />
-                    : <div className="ad-shot__frame-empty">
-                        {loading.start ? <span className="ad-shot__frame-spinner" /> : '首帧'}
+                    : <div className={`ad-shot__frame-empty ${startBusy ? 'ad-shot__frame-empty--loading' : ''}`}>
+                        {startBusy ? <span className="ad-shot__frame-spinner" /> : '首帧'}
                       </div>
                   }
                   <button
-                    className="ad-shot__frame-btn"
+                    className={`ad-shot__frame-btn ${loading.start === 'queued' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'start')}
-                    disabled={!hasPrompt || loading.start}
+                    disabled={!hasPrompt || startBusy}
                   >
-                    {loading.start ? '生成中…' : shot.startImageUrl ? '重新生成' : '生成首帧'}
+                    {frameLabel(loading.start, !!shot.startImageUrl, cooldownLeft)}
                   </button>
                 </div>
 
                 <div className="ad-shot__frame">
                   {shot.endImageUrl
                     ? <img className="ad-shot__frame-img" src={shot.endImageUrl} alt="尾帧" draggable={false} />
-                    : <div className="ad-shot__frame-empty ad-shot__frame-empty--dim">
-                        {loading.end ? <span className="ad-shot__frame-spinner" /> : '尾帧（可选）'}
+                    : <div className={`ad-shot__frame-empty ad-shot__frame-empty--dim ${endBusy ? 'ad-shot__frame-empty--loading' : ''}`}>
+                        {endBusy ? <span className="ad-shot__frame-spinner" /> : '尾帧（可选）'}
                       </div>
                   }
                   <button
-                    className="ad-shot__frame-btn ad-shot__frame-btn--dim"
+                    className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end === 'queued' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'end')}
-                    disabled={!hasPrompt || loading.end}
+                    disabled={!hasPrompt || endBusy}
                   >
-                    {loading.end ? '生成中…' : shot.endImageUrl ? '重新生成' : '+ 尾帧'}
+                    {endFrameLabel(loading.end, !!shot.endImageUrl, cooldownLeft)}
                   </button>
                 </div>
               </div>
