@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
 import { generateSceneImage } from '../utils/imageApi';
@@ -33,6 +33,7 @@ interface FrameLoadingState {
 export default function ScriptPage({ character, shots, onShotsChange, onGenerate, onBack }: Props) {
   const [showPresets, setShowPresets] = useState(false);
   const [frameLoading, setFrameLoading] = useState<Record<string, FrameLoadingState>>({});
+  const autoGenDone = useRef(false);
 
   const updateShot = (id: string, update: Partial<Shot>) => {
     onShotsChange(shots.map(s => s.id === id ? { ...s, ...update } : s));
@@ -56,6 +57,16 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       setFrameLoading(prev => ({ ...prev, [shot.id]: { ...prev[shot.id], [type]: false } }));
     }
   };
+
+  // Auto-generate start frames for all pre-filled shots on mount
+  useEffect(() => {
+    if (autoGenDone.current) return;
+    autoGenDone.current = true;
+    shots
+      .filter(s => s.prompt.trim() && !s.startImageUrl)
+      .forEach(s => generateFrame(s, 'start'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addShot = () => {
     if (shots.length >= 5) return;
