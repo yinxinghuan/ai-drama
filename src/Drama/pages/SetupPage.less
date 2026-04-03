@@ -1,0 +1,130 @@
+@accent: #a78bfa;
+@bg-card: rgba(255, 255, 255, 0.06);
+@border: rgba(255, 255, 255, 0.1);
+@text: #e8e8f0;
+@text-dim: #9090b0;
+
+.ad-setup {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px 16px 16px;
+  overflow-y: auto;
+}
+
+.ad-setup__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.ad-setup__logo {
+  width: 28px;
+  height: 28px;
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+
+.ad-setup__title {
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+}
+
+.ad-setup__sub {
+  font-size: 13px;
+  color: @text-dim;
+}
+
+.ad-setup__loading {
+  text-align: center;
+  color: @text-dim;
+  font-size: 14px;
+  padding: 40px 0;
+}
+
+.ad-setup__demo-tip {
+  text-align: center;
+  font-size: 11px;
+  color: @text-dim;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+}
+
+.ad-setup__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.ad-char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: @bg-card;
+  border: 1px solid @border;
+  border-radius: 16px;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: none;
+
+  &:active { background: rgba(167, 139, 250, 0.12); }
+
+  &--me {
+    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(167, 139, 250, 0.08);
+  }
+}
+
+.ad-char-card__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: @text;
+  text-align: center;
+  word-break: break-all;
+}
+
+.ad-char-card__tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  background: rgba(167, 139, 250, 0.3);
+  color: @accent;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ad-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(167, 139, 250, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  span {
+    font-size: 18px;
+    font-weight: 700;
+    color: @accent;
+  }
+}

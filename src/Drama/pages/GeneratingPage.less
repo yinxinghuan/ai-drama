@@ -1,0 +1,146 @@
+@accent: #a78bfa;
+@bg-card: rgba(255, 255, 255, 0.05);
+@border: rgba(255, 255, 255, 0.1);
+@text: #e8e8f0;
+@text-dim: #9090b0;
+
+.ad-gen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 32px 20px 24px;
+  gap: 24px;
+}
+
+.ad-gen__top {
+  text-align: center;
+}
+
+.ad-gen__icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.ad-gen__title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #e8e8f0;
+  margin-bottom: 6px;
+}
+
+.ad-gen__sub {
+  font-size: 13px;
+  color: @text-dim;
+}
+
+.ad-gen__bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ad-gen__bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ad-gen__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a78bfa, #60a5fa);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.ad-gen__bar-label {
+  font-size: 12px;
+  color: @text-dim;
+  white-space: nowrap;
+}
+
+.ad-gen__shots {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.ad-gen__shot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: @bg-card;
+  border: 1px solid @border;
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color 0.3s;
+
+  &--generating { border-color: rgba(167, 139, 250, 0.4); }
+  &--done { border-color: rgba(74, 222, 128, 0.3); }
+  &--error { border-color: rgba(239, 68, 68, 0.3); }
+}
+
+.ad-gen__shot-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: @accent;
+  white-space: nowrap;
+}
+
+.ad-gen__shot-prompt {
+  flex: 1;
+  font-size: 13px;
+  color: @text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-gen__shot-status {
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ad-gen__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  &--wait { background: @border; }
+}
+
+.ad-gen__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  border-top-color: @accent;
+  border-radius: 50%;
+  animation: ad-spin 0.7s linear infinite;
+}
+
+@keyframes ad-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ad-gen__check {
+  font-size: 14px;
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.ad-gen__err {
+  font-size: 14px;
+  color: #f87171;
+  font-weight: 700;
+}
+
+.ad-gen__error-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #f87171;
+}

@@ -1,0 +1,218 @@
+@accent: #a78bfa;
+@bg-card: rgba(255, 255, 255, 0.05);
+@border: rgba(255, 255, 255, 0.1);
+@text: #e8e8f0;
+@text-dim: #9090b0;
+
+.ad-script {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ad-script__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid @border;
+  flex-shrink: 0;
+}
+
+.ad-script__back {
+  background: none;
+  border: none;
+  color: @text-dim;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ad-script__char {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.ad-script__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(167, 139, 250, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  span { font-size: 12px; font-weight: 700; color: @accent; }
+}
+
+.ad-script__char-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: @text;
+}
+
+.ad-script__preset-btn {
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 8px;
+  color: @accent;
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ad-templates {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid @border;
+  background: rgba(0,0,0,0.2);
+}
+
+.ad-template-card {
+  background: @bg-card;
+  border: 1px solid @border;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active { border-color: @accent; }
+}
+
+.ad-template-card__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: @text;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.ad-template-card__preview {
+  font-size: 11px;
+  color: @text-dim;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-shots {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ad-shot {
+  background: @bg-card;
+  border: 1px solid @border;
+  border-radius: 14px;
+  padding: 12px;
+  position: relative;
+}
+
+.ad-shot__num {
+  font-size: 11px;
+  font-weight: 700;
+  color: @accent;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ad-shot__input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: @text;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+
+  &::placeholder { color: @text-dim; }
+}
+
+.ad-shot__hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.ad-shot__hint {
+  font-size: 11px;
+  color: @text-dim;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid @border;
+  border-radius: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active { border-color: @accent; color: @text; }
+}
+
+.ad-shot__remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: @text-dim;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 2px;
+}
+
+.ad-add-shot {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1.5px dashed @border;
+  border-radius: 14px;
+  color: @text-dim;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s, color 0.2s;
+
+  &:hover { border-color: @accent; color: @accent; }
+}
+
+.ad-script__footer {
+  padding: 12px 16px 20px;
+  border-top: 1px solid @border;
+  flex-shrink: 0;
+}
+
+.ad-generate-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s;
+
+  &:disabled { opacity: 0.35; cursor: default; }
+  &:active:not(:disabled) { opacity: 0.85; }
+}
