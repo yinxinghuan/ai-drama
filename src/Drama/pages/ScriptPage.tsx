@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
 import { generateSceneImage, subscribeCooldown } from '../utils/imageApi';
@@ -7,7 +7,7 @@ import './ScriptPage.less';
 interface Props {
   character: Character;
   shots: Shot[];
-  onShotsChange: (shots: Shot[]) => void;
+  onShotsChange: Dispatch<SetStateAction<Shot[]>>;
   onGenerate: () => void;
   onBack: () => void;
 }
@@ -30,14 +30,14 @@ interface FrameLoadingState { start: FrameState; end: FrameState; }
 
 function frameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
   if (state === 'generating') return '生成中…';
-  if (state === 'queued') return cooldownLeft > 0 ? `冷却 ${cooldownLeft}s` : '排队中…';
+  if (state === 'queued') return cooldownLeft > 0 ? `${cooldownLeft}s` : '排队中…';
   if (cooldownLeft > 0) return `${cooldownLeft}s`;
   return hasImage ? '重新生成' : '生成首帧';
 }
 
 function endFrameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
   if (state === 'generating') return '生成中…';
-  if (state === 'queued') return cooldownLeft > 0 ? `冷却 ${cooldownLeft}s` : '排队中…';
+  if (state === 'queued') return cooldownLeft > 0 ? `${cooldownLeft}s` : '排队中…';
   if (cooldownLeft > 0) return `${cooldownLeft}s`;
   return hasImage ? '重新生成' : '+ 尾帧';
 }
@@ -51,7 +51,10 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   useEffect(() => subscribeCooldown(setCooldownLeft), []);
 
   const setFrameState = (id: string, type: 'start' | 'end', state: FrameState) => {
-    setFrameLoading(prev => ({ ...prev, [id]: { ...prev[id], [type]: state } }));
+    setFrameLoading(prev => ({
+      ...prev,
+      [id]: { ...{ start: 'idle' as FrameState, end: 'idle' as FrameState }, ...prev[id], [type]: state },
+    }));
   };
 
   const updatePrompt = (id: string, prompt: string) => {
@@ -62,7 +65,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   const generateFrameFor = (
     shot: Shot,
-    currentShots: Shot[],
     type: 'start' | 'end',
     signal: { cancelled: boolean },
   ) => {
@@ -78,7 +80,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       () => { if (!signal.cancelled) setFrameState(shot.id, type, 'generating'); },
     ).then(url => {
       if (signal.cancelled) return;
-      onShotsChange(currentShots.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
+      // Functional update avoids stale-closure overwriting concurrent changes
+      onShotsChange(prev => prev.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
     }).catch(() => {
       // silently fail — user can retry
     }).finally(() => {
@@ -87,14 +90,14 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   };
 
   const generateFrame = (shot: Shot, type: 'start' | 'end') => {
-    generateFrameFor(shot, shots, type, { cancelled: false });
+    generateFrameFor(shot, type, { cancelled: false });
   };
 
   // Auto-generate start frames for pre-filled shots on mount (StrictMode-safe)
   useEffect(() => {
     const signal = { cancelled: false };
     shots.filter(s => s.prompt.trim() && !s.startImageUrl)
-      .forEach(shot => generateFrameFor(shot, shots, 'start', signal));
+      .forEach(shot => generateFrameFor(shot, 'start', signal));
     return () => { signal.cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -105,7 +108,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     const toGen = shots.filter(s => s.prompt.trim() && !s.startImageUrl
       && (!frameLoading[s.id] || frameLoading[s.id].start === 'idle'));
     if (toGen.length === 0) return;
-    toGen.forEach(shot => generateFrameFor(shot, shots, 'start', signal));
+    toGen.forEach(shot => generateFrameFor(shot, 'start', signal));
     return () => { signal.cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shots.map(s => s.id).join(',')]);
