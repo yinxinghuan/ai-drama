@@ -78,6 +78,7 @@
   padding: 12px 14px;
   transition: border-color 0.3s;
 
+  &--imaging { border-color: rgba(96, 165, 250, 0.4); }
   &--generating { border-color: rgba(167, 139, 250, 0.4); }
   &--done { border-color: rgba(74, 222, 128, 0.3); }
   &--error { border-color: rgba(239, 68, 68, 0.3); }
@@ -100,11 +101,16 @@
 }
 
 .ad-gen__shot-status {
-  width: 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 5px;
   flex-shrink: 0;
+}
+
+.ad-gen__step-label {
+  font-size: 10px;
+  color: @accent;
+  white-space: nowrap;
 }
 
 .ad-gen__dot {

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import type { Character } from '../types';
 import { fetchPublicUserByName } from '../utils/aigramPublicApi';
 
+const R2 = 'https://images.aiwaves.tech/mymeme/avatars';
+
 const DEMO_CONTACTS: Character[] = [
-  { telegram_id: '1', name: 'Algram', head_url: '', avatar_describe: 'young man with stylish hair, casual outfit' },
-  { telegram_id: '2', name: 'Jenny', head_url: '', avatar_describe: 'young woman with long hair, cheerful expression' },
-  { telegram_id: '3', name: 'ghostpixel', head_url: '', avatar_describe: 'cool guy with headphones, urban streetwear style' },
-  { telegram_id: '4', name: 'JM·F', head_url: '', avatar_describe: 'creative person with artistic style' },
-  { telegram_id: '5', name: 'Isaya', head_url: '', avatar_describe: 'young woman with headphones on ears, anime style' },
+  { telegram_id: '1',   name: 'Algram',    head_url: `${R2}/algram.png`,     avatar_describe: 'young stylish man' },
+  { telegram_id: '2',   name: 'Jenny',     head_url: `${R2}/jenny.png`,      avatar_describe: 'young woman with long hair' },
+  { telegram_id: '3',   name: 'ghostpixel',head_url: `${R2}/ghostpixel.png`, avatar_describe: 'Lovely ghost in white cloth', style: 'Ghibli' },
+  { telegram_id: '4',   name: 'JM·F',      head_url: `${R2}/jmf.png`,        avatar_describe: 'creative artistic person' },
+  { telegram_id: '5',   name: 'Isaya',     head_url: `${R2}/isaya.png`,      avatar_describe: 'young woman with headphones' },
+  { telegram_id: '6',   name: 'Isabel',    head_url: `${R2}/isabel.png`,     avatar_describe: 'confident young woman' },
 ];
 
 function getUrlParams() {
@@ -15,11 +18,14 @@ function getUrlParams() {
   return { apiOrigin: p.get('api_origin'), telegramId: p.get('telegram_id') };
 }
 
-function postMessageCall(apiOrigin: string, url: string, timeoutMs = 8000): Promise<unknown> {
+function postMessageCall(apiOrigin: string, url: string, timeoutMs = 15000): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const requestId = crypto.randomUUID();
     const payload = { url, method: 'GET', data: null, request_id: requestId, emitter: window.location.origin };
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+
+    // Extract just the origin (strips path) — critical for postMessage to work
+    const targetOrigin = new URL(apiOrigin).origin;
 
     const timer = setTimeout(() => {
       window.removeEventListener('message', handler);
@@ -27,6 +33,7 @@ function postMessageCall(apiOrigin: string, url: string, timeoutMs = 8000): Prom
     }, timeoutMs);
 
     function handler(event: MessageEvent) {
+      if (event.origin !== targetOrigin) return;
       if (typeof event.data !== 'string' || !event.data.startsWith('callAPIResult-')) return;
       try {
         const result = JSON.parse(decodeURIComponent(escape(atob(event.data.slice('callAPIResult-'.length)))));
@@ -38,7 +45,7 @@ function postMessageCall(apiOrigin: string, url: string, timeoutMs = 8000): Prom
     }
 
     window.addEventListener('message', handler);
-    window.parent.postMessage(`callAPI-${encoded}`, apiOrigin);
+    window.parent.postMessage(`callAPI-${encoded}`, targetOrigin);
   });
 }
 
@@ -47,6 +54,7 @@ interface RawUser {
   name?: string;
   head_url?: string;
   avatar_describe?: string | null;
+  style?: string;
 }
 
 function parseUser(raw: RawUser, fallbackName = ''): Character {
@@ -55,32 +63,13 @@ function parseUser(raw: RawUser, fallbackName = ''): Character {
     name: raw.name || fallbackName,
     head_url: raw.head_url || '',
     avatar_describe: raw.avatar_describe || undefined,
+    style: raw.style || undefined,
   };
-}
-
-async function fetchUserInfo(apiOrigin: string, telegramId: string): Promise<Character | null> {
-  try {
-    const res = await postMessageCall(
-      apiOrigin,
-      `/note/telegram/user/get/info/by/telegram_id?telegram_id=${telegramId}`,
-      5000
-    ) as { data?: RawUser } | RawUser | null;
-
-    // Handle both { data: {...} } and direct object
-    const raw = (res && 'data' in res && res.data && typeof res.data === 'object')
-      ? res.data as RawUser
-      : res as RawUser | null;
-
-    if (!raw || !raw.telegram_id) return null;
-    return parseUser(raw, '你');
-  } catch {
-    return null;
-  }
 }
 
 /** Enrich a character with full AI profile via public API (by name, no token needed) */
 export async function enrichCharacter(char: Character): Promise<Character> {
-  if (char.avatar_describe && char.head_url && char.style) return char; // already complete
+  if (char.avatar_describe && char.head_url && char.style) return char;
   const data = await fetchPublicUserByName(char.name);
   if (!data) return char;
   return {
@@ -109,45 +98,51 @@ export function useAigram(): AigramState {
 
   useEffect(() => {
     if (!apiOrigin || !telegramId) {
+      // Demo mode — use bundled R2 avatars, optionally enrich with public API
       setIsDemo(true);
-      // Auto-enrich demo contacts via public API
+      setMe(null);
+      setContacts(DEMO_CONTACTS);
+      setLoading(false);
+
+      // Enrich in background (for style/avatar_describe updates)
       Promise.all(
-        DEMO_CONTACTS.map(c => fetchPublicUserByName(c.name).then(d => d ? {
-          ...c,
-          head_url: d.head_url || c.head_url,
-          avatar_describe: d.avatar_describe || c.avatar_describe,
-          style: d.style,
-        } : c))
-      ).then(enriched => {
-        setContacts(enriched);
-        setLoading(false);
-      });
+        DEMO_CONTACTS.map(c =>
+          fetchPublicUserByName(c.name).then(d => d ? {
+            ...c,
+            head_url: d.head_url || c.head_url,
+            avatar_describe: d.avatar_describe || c.avatar_describe,
+            style: d.style || c.style,
+          } : c).catch(() => c)
+        )
+      ).then(enriched => setContacts(enriched));
+
       return;
     }
 
     async function load() {
       try {
-        // Fetch self + contacts in parallel
-        const [meUser, contactsRaw] = await Promise.all([
-          fetchUserInfo(apiOrigin!, telegramId!),
-          postMessageCall(apiOrigin!, `/note/telegram/user/contact/list?telegram_id=${telegramId}`, 10000),
+        const [meRaw, contactsRaw] = await Promise.all([
+          postMessageCall(apiOrigin!, `/note/telegram/user/get/info/by/telegram_id?telegram_id=${telegramId}`, 8000),
+          postMessageCall(apiOrigin!, `/note/telegram/user/contact/list?telegram_id=${telegramId}`, 15000),
         ]);
 
-        setMe(meUser || { telegram_id: telegramId!, name: '你', head_url: '', avatar_describe: undefined });
+        // Unwrap { data: user } or direct user object
+        const meData = (meRaw && typeof meRaw === 'object' && 'data' in (meRaw as object))
+          ? (meRaw as { data: RawUser }).data
+          : meRaw as RawUser;
+        setMe(parseUser(meData, '你'));
 
-        // Contacts: handle both array and { data: [...] }
-        let rawList: RawUser[] = [];
-        if (Array.isArray(contactsRaw)) {
-          rawList = contactsRaw as RawUser[];
-        } else if (contactsRaw && typeof contactsRaw === 'object' && 'data' in contactsRaw && Array.isArray((contactsRaw as { data: unknown }).data)) {
-          rawList = (contactsRaw as { data: RawUser[] }).data;
-        }
+        // Unwrap { data: [...] } or direct array
+        const rawList: RawUser[] = Array.isArray(contactsRaw)
+          ? contactsRaw
+          : Array.isArray((contactsRaw as { data?: RawUser[] })?.data)
+            ? (contactsRaw as { data: RawUser[] }).data
+            : [];
 
-        const friends = rawList.slice(0, 8).map(u => parseUser(u));
+        const friends = rawList.slice(0, 9).map(u => parseUser(u));
         setContacts(friends.length > 0 ? friends : DEMO_CONTACTS);
         setIsDemo(friends.length === 0);
       } catch {
-        setMe({ telegram_id: telegramId!, name: '你', head_url: '', avatar_describe: undefined });
         setContacts(DEMO_CONTACTS);
         setIsDemo(true);
       } finally {

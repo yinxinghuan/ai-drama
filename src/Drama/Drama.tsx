@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Character, Shot, Phase } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
+import { generateSceneImage } from './utils/imageApi';
 import { generateVideo } from './utils/videoApi';
 import SetupPage from './pages/SetupPage';
 import ScriptPage from './pages/ScriptPage';
@@ -45,12 +46,16 @@ export default function Drama() {
   }, []);
 
   const generateShot = useCallback(async (shot: Shot, char: Character) => {
-    updateShot(shot.id, { status: 'generating' });
+    const prompt = buildPrompt(shot.prompt, char);
     try {
-      const prompt = buildPrompt(shot.prompt, char);
-      const imageUrl = char.head_url || undefined;
-      // 首帧和尾帧都用角色形象，强制模型在整个视频中维持角色一致性
-      const videoUrl = await generateVideo(prompt, imageUrl, imageUrl);
+      // Step 1: generate scene image (img2img with character as ref)
+      updateShot(shot.id, { status: 'imaging' });
+      const sceneImageUrl = await generateSceneImage(prompt, char.head_url);
+      updateShot(shot.id, { sceneImageUrl });
+
+      // Step 2: generate video from scene image using prompt_group (A→B→A, 10s)
+      updateShot(shot.id, { status: 'generating' });
+      const videoUrl = await generateVideo(prompt, sceneImageUrl);
       updateShot(shot.id, { status: 'done', videoUrl });
     } catch (err) {
       updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
