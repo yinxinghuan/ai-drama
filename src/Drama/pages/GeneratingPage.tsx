@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function GeneratingPage({ shots, totalCount }: Props) {
-  const doneCount = shots.filter(s => s.status === 'done').length;
+  const doneCount = shots.filter(s => s.status === 'done' || s.status === 'error').length;
   const errorCount = shots.filter(s => s.status === 'error').length;
   const progress = Math.round((doneCount / totalCount) * 100);
 
@@ -36,6 +36,7 @@ export default function GeneratingPage({ shots, totalCount }: Props) {
             <div className="ad-gen__shot-status">
               {shot.status === 'idle' && <span className="ad-gen__dot ad-gen__dot--wait" />}
               {shot.status === 'imaging' && <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">生图中</span></>}
+              {shot.status === 'waiting' && <><span className="ad-gen__cooldown">{shot.waitSeconds ?? 0}s</span><span className="ad-gen__step-label">冷却中</span></>}
               {shot.status === 'generating' && <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">生成视频</span></>}
               {shot.status === 'done' && <span className="ad-gen__check">✓</span>}
               {shot.status === 'error' && <span className="ad-gen__err">✕</span>}

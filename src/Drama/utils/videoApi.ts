@@ -1,4 +1,34 @@
 const API_URL = 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443/video';
+const COOLDOWN_MS = 100_000;
+
+let lastVideoCallTime = 0;
+
+/**
+ * Wait until 100s has elapsed since last video call.
+ * onTick is called every second with remaining seconds.
+ */
+export async function waitForVideoCooldown(onTick: (remaining: number) => void): Promise<void> {
+  const elapsed = Date.now() - lastVideoCallTime;
+  if (elapsed >= COOLDOWN_MS) return;
+
+  let remaining = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+  onTick(remaining);
+
+  await new Promise<void>(resolve => {
+    const interval = setInterval(() => {
+      remaining--;
+      onTick(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
+export function markVideoCallStart() {
+  lastVideoCallTime = Date.now();
+}
 
 /**
  * Generate video using prompt_group for A→B→A (10s) motion.

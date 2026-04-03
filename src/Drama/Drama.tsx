@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import type { Character, Shot, Phase } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage } from './utils/imageApi';
-import { generateVideo } from './utils/videoApi';
+import { generateVideo, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
 import SetupPage from './pages/SetupPage';
 import ScriptPage from './pages/ScriptPage';
 import GeneratingPage from './pages/GeneratingPage';
@@ -53,7 +53,14 @@ export default function Drama() {
       const sceneImageUrl = await generateSceneImage(prompt, char.head_url);
       updateShot(shot.id, { sceneImageUrl });
 
-      // Step 2: generate video from scene image using prompt_group (A→B→A, 10s)
+      // Step 2: wait for video cooldown (100s between calls)
+      updateShot(shot.id, { status: 'waiting' });
+      await waitForVideoCooldown(remaining => {
+        updateShot(shot.id, { waitSeconds: remaining });
+      });
+
+      // Step 3: generate video from scene image using prompt_group (A→B→A, 10s)
+      markVideoCallStart();
       updateShot(shot.id, { status: 'generating' });
       const videoUrl = await generateVideo(prompt, sceneImageUrl);
       updateShot(shot.id, { status: 'done', videoUrl });
@@ -64,12 +71,17 @@ export default function Drama() {
 
   const handleGenerate = useCallback(async () => {
     if (!character) return;
-    const currentShots = shots.filter(s => s.prompt.trim());
+    const activeShots = shots.filter(s => s.prompt.trim());
 
-    setShots(prev => prev.map(s => ({ ...s, status: 'idle', videoUrl: undefined, error: undefined })));
+    setShots(prev => prev.map(s => ({
+      ...s, status: 'idle', videoUrl: undefined, sceneImageUrl: undefined, error: undefined, waitSeconds: undefined,
+    })));
     setPhase('generating');
 
-    await Promise.all(currentShots.map(shot => generateShot(shot, character)));
+    // Sequential: one shot at a time to respect API rate limits
+    for (const shot of activeShots) {
+      await generateShot(shot, character);
+    }
 
     setPhase('theater');
   }, [character, shots, generateShot]);

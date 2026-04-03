@@ -79,6 +79,7 @@
   transition: border-color 0.3s;
 
   &--imaging { border-color: rgba(96, 165, 250, 0.4); }
+  &--waiting { border-color: rgba(251, 191, 36, 0.4); }
   &--generating { border-color: rgba(167, 139, 250, 0.4); }
   &--done { border-color: rgba(74, 222, 128, 0.3); }
   &--error { border-color: rgba(239, 68, 68, 0.3); }
@@ -111,6 +112,14 @@
   font-size: 10px;
   color: @accent;
   white-space: nowrap;
+}
+
+.ad-gen__cooldown {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fbbf24;
+  min-width: 30px;
+  text-align: right;
 }
 
 .ad-gen__dot {
