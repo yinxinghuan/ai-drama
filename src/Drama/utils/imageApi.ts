@@ -4,9 +4,19 @@ const IMAGE_API = import.meta.env.DEV
   : 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
 
 const COOLDOWN_MS = 75_000;
-let lastCallTime = 0;
 
-// Pub-sub for cooldown remaining seconds (0 = ready)
+// Slot reservation: each request reserves the next available 75s slot
+// JS is single-threaded so reserveSlot() is atomic
+let nextSlot = 0; // epoch ms when the next request can fire
+
+function reserveSlot(): number {
+  const now = Date.now();
+  const startAt = Math.max(now, nextSlot);
+  nextSlot = startAt + COOLDOWN_MS;
+  return Math.max(0, startAt - now); // ms to wait before firing
+}
+
+// Pub-sub for global cooldown display
 type CooldownListener = (remaining: number) => void;
 const cooldownListeners: CooldownListener[] = [];
 
@@ -18,52 +28,43 @@ export function subscribeCooldown(listener: CooldownListener): () => void {
   };
 }
 
-function notifyCooldown(remaining: number) {
-  cooldownListeners.forEach(l => l(remaining));
-}
-
-async function waitForCooldown(): Promise<void> {
-  const elapsed = Date.now() - lastCallTime;
-  if (elapsed >= COOLDOWN_MS) return;
-
-  let remaining = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
-  notifyCooldown(remaining);
-
-  await new Promise<void>(resolve => {
-    const interval = setInterval(() => {
-      remaining = Math.ceil((COOLDOWN_MS - (Date.now() - lastCallTime)) / 1000);
-      const left = Math.max(0, remaining);
-      notifyCooldown(left);
-      if (left <= 0) { clearInterval(interval); resolve(); }
-    }, 1000);
-  });
-}
-
-// Serial queue — only one request at a time
-let queue: Promise<unknown> = Promise.resolve();
-
-function enqueue<T>(fn: () => Promise<T>): Promise<T> {
-  const next = queue.then(fn, fn);
-  queue = next.then(() => {}, () => {});
-  return next;
+// Broadcast the time until the *first* available slot
+function broadcastGlobalCooldown() {
+  const left = Math.max(0, Math.ceil((nextSlot - COOLDOWN_MS - Date.now()) / 1000));
+  cooldownListeners.forEach(l => l(left));
 }
 
 /**
- * Generate a scene image (img2img with character as ref).
- * @param onQueued  called immediately when added to queue
- * @param onStart   called when this request actually begins executing
+ * Generate a scene image.
+ * Slot is reserved synchronously on call — subsequent calls queue automatically.
+ * @param onWaiting  called with remaining seconds while waiting for slot (fires every second)
+ * @param onStart    called when HTTP request actually fires
  */
 export function generateSceneImage(
   prompt: string,
   refUrl: string,
-  onQueued?: () => void,
+  onWaiting?: (remaining: number) => void,
   onStart?: () => void,
 ): Promise<string> {
-  onQueued?.();
-  return enqueue(async () => {
-    await waitForCooldown();
-    lastCallTime = Date.now();
-    notifyCooldown(0);
+  const waitMs = reserveSlot(); // reserve slot immediately (synchronous)
+  broadcastGlobalCooldown();
+
+  return (async () => {
+    if (waitMs > 0) {
+      let remaining = Math.ceil(waitMs / 1000);
+      onWaiting?.(remaining);
+      await new Promise<void>(resolve => {
+        const interval = setInterval(() => {
+          remaining--;
+          const left = Math.max(0, remaining);
+          onWaiting?.(left);
+          broadcastGlobalCooldown();
+          if (left <= 0) { clearInterval(interval); resolve(); }
+        }, 1000);
+      });
+    }
+
+    broadcastGlobalCooldown();
     onStart?.();
 
     const res = await fetch(IMAGE_API, {
@@ -80,5 +81,5 @@ export function generateSceneImage(
     const data = await res.json() as { code: number; url: string };
     if (data.code !== 200 || !data.url) throw new Error('生图失败，请重试');
     return data.url;
-  });
+  })();
 }

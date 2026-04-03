@@ -25,20 +25,23 @@ function buildImagePrompt(userPrompt: string, character: Character): string {
   return parts.join(', ');
 }
 
-type FrameState = 'idle' | 'queued' | 'generating';
-interface FrameLoadingState { start: FrameState; end: FrameState; }
+type FrameState = 'idle' | 'waiting' | 'generating';
+interface FrameSlot { state: FrameState; wait: number; } // wait: per-slot countdown seconds
+interface FrameLoadingState { start: FrameSlot; end: FrameSlot; }
 
-function frameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
-  if (state === 'generating') return '生成中…';
-  if (state === 'queued') return cooldownLeft > 0 ? `${cooldownLeft}s` : '排队中…';
-  if (cooldownLeft > 0) return `${cooldownLeft}s`;
+const IDLE_SLOT: FrameSlot = { state: 'idle', wait: 0 };
+
+function frameLabel(slot: FrameSlot, hasImage: boolean, globalCooldown: number): string {
+  if (slot.state === 'generating') return '生成中…';
+  if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
+  if (globalCooldown > 0) return `${globalCooldown}s`;
   return hasImage ? '重新生成' : '生成首帧';
 }
 
-function endFrameLabel(state: FrameState, hasImage: boolean, cooldownLeft: number): string {
-  if (state === 'generating') return '生成中…';
-  if (state === 'queued') return cooldownLeft > 0 ? `${cooldownLeft}s` : '排队中…';
-  if (cooldownLeft > 0) return `${cooldownLeft}s`;
+function endFrameLabel(slot: FrameSlot, hasImage: boolean, globalCooldown: number): string {
+  if (slot.state === 'generating') return '生成中…';
+  if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
+  if (globalCooldown > 0) return `${globalCooldown}s`;
   return hasImage ? '重新生成' : '+ 尾帧';
 }
 
@@ -50,10 +53,10 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   // Subscribe to global image API cooldown
   useEffect(() => subscribeCooldown(setCooldownLeft), []);
 
-  const setFrameState = (id: string, type: 'start' | 'end', state: FrameState) => {
+  const setFrameSlot = (id: string, type: 'start' | 'end', slot: FrameSlot) => {
     setFrameLoading(prev => ({
       ...prev,
-      [id]: { ...{ start: 'idle' as FrameState, end: 'idle' as FrameState }, ...prev[id], [type]: state },
+      [id]: { ...{ start: IDLE_SLOT, end: IDLE_SLOT }, ...prev[id], [type]: slot },
     }));
   };
 
@@ -81,16 +84,19 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     generateSceneImage(
       prompt,
       refUrl,
-      () => { if (!signal.cancelled) setFrameState(shot.id, type, 'queued'); },
-      () => { if (!signal.cancelled) setFrameState(shot.id, type, 'generating'); },
+      (remaining) => { // onWaiting: called each second while waiting for slot
+        if (!signal.cancelled) setFrameSlot(shot.id, type, { state: 'waiting', wait: remaining });
+      },
+      () => { // onStart: slot time reached, HTTP request fires
+        if (!signal.cancelled) setFrameSlot(shot.id, type, { state: 'generating', wait: 0 });
+      },
     ).then(url => {
       if (signal.cancelled) return;
-      // Functional update avoids stale-closure overwriting concurrent changes
       onShotsChange(prev => prev.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
     }).catch(() => {
       // silently fail — user can retry
     }).finally(() => {
-      if (!signal.cancelled) setFrameState(shot.id, type, 'idle');
+      if (!signal.cancelled) setFrameSlot(shot.id, type, IDLE_SLOT);
     });
   };
 
@@ -111,7 +117,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   useEffect(() => {
     const signal = { cancelled: false };
     const toGen = shots.filter(s => s.prompt.trim() && !s.startImageUrl
-      && (!frameLoading[s.id] || frameLoading[s.id].start === 'idle'));
+      && (!frameLoading[s.id] || frameLoading[s.id].start.state === 'idle'));
     if (toGen.length === 0) return;
     toGen.forEach(shot => generateFrameFor(shot, 'start', signal));
     return () => { signal.cancelled = true; };
@@ -168,10 +174,10 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
       <div className="ad-shots">
         {shots.map((shot, i) => {
-          const loading = frameLoading[shot.id] ?? { start: 'idle', end: 'idle' };
+          const loading = frameLoading[shot.id] ?? { start: IDLE_SLOT, end: IDLE_SLOT };
           const hasPrompt = shot.prompt.trim().length > 0;
-          const startBusy = loading.start !== 'idle';
-          const endBusy = loading.end !== 'idle';
+          const startBusy = loading.start.state !== 'idle';
+          const endBusy = loading.end.state !== 'idle';
           return (
             <div key={shot.id} className="ad-shot">
               <div className="ad-shot__num">镜头 {i + 1}</div>
@@ -199,11 +205,12 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                       </div>
                   }
                   <button
-                    className={`ad-shot__frame-btn ${loading.start === 'queued' ? 'ad-shot__frame-btn--queued' : ''}`}
+                    className={`ad-shot__frame-btn ${loading.start.state === 'waiting' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'start')}
                     disabled={!hasPrompt || startBusy || cooldownLeft > 0}
                   >
                     {frameLabel(loading.start, !!shot.startImageUrl, cooldownLeft)}
+
                   </button>
                 </div>
 
@@ -215,11 +222,12 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                       </div>
                   }
                   <button
-                    className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end === 'queued' ? 'ad-shot__frame-btn--queued' : ''}`}
+                    className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end.state === 'waiting' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'end')}
                     disabled={!hasPrompt || endBusy || cooldownLeft > 0}
                   >
                     {endFrameLabel(loading.end, !!shot.endImageUrl, cooldownLeft)}
+
                   </button>
                 </div>
               </div>
