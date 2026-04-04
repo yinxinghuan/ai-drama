@@ -8,8 +8,23 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 32px 20px 24px;
+  padding: 0 20px 24px;
   gap: 24px;
+}
+
+.ad-gen__header {
+  padding: 12px 0 0;
+  flex-shrink: 0;
+}
+
+.ad-gen__back {
+  background: none;
+  border: none;
+  color: @text-dim;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ad-gen__top {
@@ -154,8 +169,50 @@
   font-weight: 700;
 }
 
-.ad-gen__error-hint {
-  text-align: center;
-  font-size: 12px;
+.ad-gen__regen-btn {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(248,113,113,0.4);
+  background: rgba(248,113,113,0.1);
   color: #f87171;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+
+  &:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+}
+
+.ad-gen__footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ad-gen__preview-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s;
+
+  &--loading {
+    background: rgba(167,139,250,0.3);
+    cursor: default;
+  }
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
+.ad-gen__all-fail {
+  font-size: 13px;
+  color: #f87171;
+  text-align: center;
 }
