@@ -1,22 +1,28 @@
-import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
 import { generateSceneImage, subscribeCooldown } from '../utils/imageApi';
 import './ScriptPage.less';
 
+// ── Props ────────────────────────────────────────────────────────────────────
+
 interface Props {
   character: Character;
   shots: Shot[];
-  onShotsChange: Dispatch<SetStateAction<Shot[]>>;
-  onGenerate: () => void;
+  onShotsChange: (updater: (prev: Shot[]) => Shot[]) => void;
+  onGenerate: (enrichedShots: Shot[]) => void;
   onBack: () => void;
 }
+
+// ── Shot factory ─────────────────────────────────────────────────────────────
 
 function makeShot(prompt = ''): Shot {
   return { id: crypto.randomUUID(), prompt, status: 'idle' };
 }
 
-function buildImagePrompt(userPrompt: string, character: Character): string {
+// ── Prompt builders ───────────────────────────────────────────────────────────
+
+function buildPrompt(userPrompt: string, character: Character): string {
   const parts: string[] = [];
   if (character.avatar_describe) parts.push(character.avatar_describe);
   if (character.style) parts.push(`${character.style} style`);
@@ -25,107 +31,122 @@ function buildImagePrompt(userPrompt: string, character: Character): string {
   return parts.join(', ');
 }
 
-type FrameState = 'idle' | 'waiting' | 'generating' | 'downloading' | 'error';
-interface FrameSlot { state: FrameState; wait: number; }
-interface FrameLoadingState { start: FrameSlot; end: FrameSlot; }
-
-const IDLE_SLOT: FrameSlot = { state: 'idle', wait: 0 };
-const ERROR_SLOT: FrameSlot = { state: 'error', wait: 0 };
-
-function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
-  if (slot.state === 'generating') return '生成中…';
-  if (slot.state === 'downloading') return '下载中…';
-  if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
-  if (slot.state === 'error') return '生成失败，重试';
-  if (cooldown > 0) return `冷却中 ${cooldown}s`;
-  return hasImage ? '重新生成' : '生成首帧';
+function buildEndPrompt(userPrompt: string, character: Character): string {
+  // Take first clause (scene) + last two action clauses → end state differs from start
+  const parts = userPrompt.split('，');
+  const endPrompt = parts.length > 2
+    ? [parts[0], ...parts.slice(-2)].join('，')
+    : userPrompt;
+  return buildPrompt(endPrompt, character) + ', final moment';
 }
 
-function endFrameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
-  if (slot.state === 'generating') return '生成中…';
-  if (slot.state === 'downloading') return '下载中…';
-  if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
-  if (slot.state === 'error') return '生成失败，重试';
-  if (cooldown > 0) return `冷却中 ${cooldown}s`;
-  return hasImage ? '重新生成' : '+ 尾帧';
+// ── Frame state ───────────────────────────────────────────────────────────────
+// Single source of truth: phase + url live together.
+// Drama.tsx sees frame URLs only when "开拍" is pressed.
+
+type FramePhase = 'idle' | 'waiting' | 'generating' | 'downloading' | 'error';
+
+interface FrameData {
+  phase: FramePhase;
+  wait: number;   // countdown seconds, relevant during 'waiting'
+  url?: string;   // set when API responds, cleared when prompt changes
 }
+
+interface ShotFrames { start: FrameData; end: FrameData; }
+
+const IDLE: FrameData  = { phase: 'idle',  wait: 0 };
+const ERROR: FrameData = { phase: 'error', wait: 0 };
+
+function isBusy(f: FrameData): boolean {
+  return f.phase === 'waiting' || f.phase === 'generating' || f.phase === 'downloading';
+}
+
+function btnLabel(f: FrameData, isStart: boolean, cooldown: number): string {
+  switch (f.phase) {
+    case 'waiting':     return f.wait > 0 ? `${f.wait}s` : '即将生成…';
+    case 'generating':  return '生成中…';
+    case 'downloading': return '下载中…';
+    case 'error':       return '生成失败，重试';
+    default:
+      if (cooldown > 0) return `冷却中 ${cooldown}s`;
+      if (f.url)        return '重新生成';
+      return isStart ? '生成首帧' : '+ 尾帧';
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ScriptPage({ character, shots, onShotsChange, onGenerate, onBack }: Props) {
   const [showPresets, setShowPresets] = useState(false);
-  const [frameLoading, setFrameLoading] = useState<Record<string, FrameLoadingState>>({});
-  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [frames, setFrames] = useState<Record<string, ShotFrames>>({});
+  const [cooldown, setCooldown] = useState(0);
 
-  useEffect(() => subscribeCooldown(setCooldownLeft), []);
+  useEffect(() => subscribeCooldown(setCooldown), []);
 
-  const setFrameSlot = (id: string, type: 'start' | 'end', slot: FrameSlot) => {
-    setFrameLoading(prev => ({
-      ...prev,
-      [id]: { ...{ start: IDLE_SLOT, end: IDLE_SLOT }, ...prev[id], [type]: slot },
-    }));
-  };
+  // ── Frame state helpers ────────────────────────────────────────────────────
 
-  const updatePrompt = (id: string, prompt: string) => {
-    onShotsChange(prev => prev.map(s => s.id === id
-      ? { ...s, prompt, startImageUrl: undefined, endImageUrl: undefined }
-      : s));
-  };
+  const sf = (id: string): ShotFrames =>
+    frames[id] ?? { start: IDLE, end: IDLE };
 
-  const generateFrameFor = (
-    shot: Shot,
+  const patchFrame = useCallback((id: string, type: 'start' | 'end', patch: Partial<FrameData>) => {
+    setFrames(prev => {
+      const cur = prev[id] ?? { start: IDLE, end: IDLE };
+      return { ...prev, [id]: { ...cur, [type]: { ...cur[type], ...patch } } };
+    });
+  }, []);
+
+  // ── Generation ─────────────────────────────────────────────────────────────
+
+  const generateFrame = useCallback((
+    shotId: string,
+    prompt: string,
     type: 'start' | 'end',
     signal: { cancelled: boolean },
   ) => {
-    if (!shot.prompt.trim() || signal.cancelled) return;
+    if (!prompt.trim() || signal.cancelled) return;
 
-    // End frame: use only the final clause(s) of the description so the pose differs from start frame
-    const parts = shot.prompt.split('，');
-    const endShotPrompt = parts.length > 2
-      ? [parts[0], ...parts.slice(-2)].join('，')  // scene context + last 2 actions
-      : shot.prompt;
-    const basePrompt = buildImagePrompt(shot.prompt, character);
-    const prompt = type === 'end'
-      ? buildImagePrompt(endShotPrompt, character) + ', final moment'
-      : basePrompt;
-    // Always use character head as ref — start frame ref makes end look identical
-    const refUrl = character.head_url;
-    const urlKey = type === 'start' ? 'startImageUrl' : 'endImageUrl';
+    const apiPrompt = type === 'end'
+      ? buildEndPrompt(prompt, character)
+      : buildPrompt(prompt, character);
 
     generateSceneImage(
-      prompt,
-      refUrl,
-      (remaining) => { // onWaiting: called each second while waiting for slot
-        if (!signal.cancelled) setFrameSlot(shot.id, type, { state: 'waiting', wait: remaining });
-      },
-      () => { // onStart: slot time reached, HTTP request fires
-        if (!signal.cancelled) setFrameSlot(shot.id, type, { state: 'generating', wait: 0 });
-      },
-      () => signal.cancelled, // isCancelled: release slot without penalty if cancelled
+      apiPrompt,
+      character.head_url,
+      (wait) => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'waiting', wait }); },
+      ()     => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'generating', wait: 0 }); },
+      ()     => signal.cancelled,
     ).then(url => {
       if (signal.cancelled) return;
-      setFrameSlot(shot.id, type, { state: 'downloading', wait: 0 });
-      onShotsChange(prev => prev.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
-      // idle is set via onLoad on the <img> element
-    }).catch((err: unknown) => {
+      patchFrame(shotId, type, { phase: 'downloading', wait: 0, url });
+    }).catch(err => {
       if (!signal.cancelled) {
         console.error('生图失败', err);
-        setFrameSlot(shot.id, type, ERROR_SLOT);
+        patchFrame(shotId, type, ERROR);
       }
     });
-  };
+  }, [character, patchFrame]);
 
-  const generateFrame = (shot: Shot, type: 'start' | 'end') => {
-    generateFrameFor(shot, type, { cancelled: false });
-  };
-
-  // Auto-generate start frames on mount and when template applied (shot ids change)
+  // Auto-generate start frames on mount and when template applied (IDs change)
   useEffect(() => {
-    const signal = { cancelled: false };
-    const toGen = shots.filter(s => s.prompt.trim() && !s.startImageUrl);
-    if (toGen.length === 0) return;
-    toGen.forEach(shot => generateFrameFor(shot, 'start', signal));
-    return () => { signal.cancelled = true; };
+    const signals = new Map<string, { cancelled: boolean }>();
+    shots
+      .filter(s => s.prompt.trim() && !frames[s.id]?.start.url)
+      .forEach(s => {
+        const sig = { cancelled: false };
+        signals.set(s.id, sig);
+        generateFrame(s.id, s.prompt, 'start', sig);
+      });
+    return () => { signals.forEach(sig => { sig.cancelled = true; }); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shots.map(s => s.id).join(',')]);
+
+  // ── Shot mutations ─────────────────────────────────────────────────────────
+
+  const updatePrompt = (id: string, prompt: string) => {
+    onShotsChange(prev => prev.map(s => s.id === id ? { ...s, prompt } : s));
+    // Clear frames so stale image doesn't carry over to new prompt
+    setFrames(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
 
   const addShot = () => {
     onShotsChange(prev => prev.length >= 5 ? prev : [...prev, makeShot()]);
@@ -133,14 +154,28 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   const removeShot = (id: string) => {
     onShotsChange(prev => prev.length <= 1 ? prev : prev.filter(s => s.id !== id));
+    setFrames(prev => { const n = { ...prev }; delete n[id]; return n; });
   };
 
   const applyTemplate = (prompts: string[]) => {
-    onShotsChange(prompts.map(p => makeShot(p)));
+    onShotsChange(() => prompts.map(p => makeShot(p)));
+    setFrames({});
     setShowPresets(false);
   };
 
-  const canGenerate = shots.some(s => s.prompt.trim().length > 0);
+  // Enrich shots with generated URLs before handing off to Drama.tsx
+  const handleGenerate = () => {
+    const enriched = shots.map(s => ({
+      ...s,
+      startImageUrl: frames[s.id]?.start.url,
+      endImageUrl: frames[s.id]?.end.url,
+    }));
+    onGenerate(enriched);
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  const canGenerate = shots.some(s => s.prompt.trim());
   const activeCount = shots.filter(s => s.prompt.trim()).length;
   const initials = character.name.slice(0, 2).toUpperCase();
 
@@ -161,7 +196,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         </button>
       </div>
 
-
       {showPresets && (
         <div className="ad-templates">
           {DRAMA_TEMPLATES.map(t => (
@@ -175,10 +209,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
       <div className="ad-shots">
         {shots.map((shot, i) => {
-          const loading = frameLoading[shot.id] ?? { start: IDLE_SLOT, end: IDLE_SLOT };
+          const f = sf(shot.id);
           const hasPrompt = shot.prompt.trim().length > 0;
-          const startBusy = loading.start.state === 'waiting' || loading.start.state === 'generating' || loading.start.state === 'downloading';
-          const endBusy = loading.end.state === 'waiting' || loading.end.state === 'generating' || loading.end.state === 'downloading';
           return (
             <div key={shot.id} className="ad-shot">
               <div className="ad-shot__num">镜头 {i + 1}</div>
@@ -198,41 +230,37 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
               </div>
 
               <div className="ad-shot__frames">
-                <div className="ad-shot__frame">
-                  {shot.startImageUrl
-                    ? <img className="ad-shot__frame-img" src={shot.startImageUrl} alt="首帧" draggable={false}
-                        onLoad={() => setFrameSlot(shot.id, 'start', IDLE_SLOT)} />
-                    : <div className={`ad-shot__frame-empty ${startBusy ? 'ad-shot__frame-empty--loading' : ''}`}>
-                        {startBusy ? <span className="ad-shot__frame-spinner" /> : '首帧'}
-                      </div>
-                  }
-                  <button
-                    className={`ad-shot__frame-btn ${loading.start.state === 'waiting' || (loading.start.state === 'idle' && cooldownLeft > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
-                    onPointerDown={() => generateFrame(shot, 'start')}
-                    disabled={!hasPrompt || startBusy || cooldownLeft > 0}
-                  >
-                    {frameLabel(loading.start, !!shot.startImageUrl, cooldownLeft)}
-
-                  </button>
-                </div>
-
-                <div className="ad-shot__frame">
-                  {shot.endImageUrl
-                    ? <img className="ad-shot__frame-img" src={shot.endImageUrl} alt="尾帧" draggable={false}
-                        onLoad={() => setFrameSlot(shot.id, 'end', IDLE_SLOT)} />
-                    : <div className={`ad-shot__frame-empty ad-shot__frame-empty--dim ${endBusy ? 'ad-shot__frame-empty--loading' : ''}`}>
-                        {endBusy ? <span className="ad-shot__frame-spinner" /> : '尾帧（可选）'}
-                      </div>
-                  }
-                  <button
-                    className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end.state === 'waiting' || (loading.end.state === 'idle' && cooldownLeft > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
-                    onPointerDown={() => generateFrame(shot, 'end')}
-                    disabled={!hasPrompt || endBusy || cooldownLeft > 0}
-                  >
-                    {endFrameLabel(loading.end, !!shot.endImageUrl, cooldownLeft)}
-
-                  </button>
-                </div>
+                {(['start', 'end'] as const).map(type => {
+                  const frame = f[type];
+                  const busy = isBusy(frame);
+                  const isStart = type === 'start';
+                  const label = isStart ? '首帧' : '尾帧（可选）';
+                  return (
+                    <div key={type} className="ad-shot__frame">
+                      {frame.url
+                        ? <img
+                            key={frame.url}
+                            className="ad-shot__frame-img"
+                            src={frame.url}
+                            alt={label}
+                            draggable={false}
+                            onLoad={() => patchFrame(shot.id, type, { phase: 'idle' })}
+                            onError={() => patchFrame(shot.id, type, ERROR)}
+                          />
+                        : <div className={`ad-shot__frame-empty ${!isStart ? 'ad-shot__frame-empty--dim' : ''} ${busy ? 'ad-shot__frame-empty--loading' : ''}`}>
+                            {busy ? <span className="ad-shot__frame-spinner" /> : label}
+                          </div>
+                      }
+                      <button
+                        className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || (frame.phase === 'idle' && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
+                        onPointerDown={() => generateFrame(shot.id, shot.prompt, type, { cancelled: false })}
+                        disabled={!hasPrompt || busy || cooldown > 0}
+                      >
+                        {btnLabel(frame, isStart, cooldown)}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               {shots.length > 1 && (
@@ -252,7 +280,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       <div className="ad-script__footer">
         <button
           className="ad-generate-btn"
-          onPointerDown={onGenerate}
+          onPointerDown={handleGenerate}
           disabled={!canGenerate}
         >
           开拍！生成 {activeCount} 个镜头

@@ -73,12 +73,12 @@ export default function Drama() {
     }
   }, [updateShot]);
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (enrichedShots: Shot[]) => {
     if (!character) return;
-    const activeShots = shots.filter(s => s.prompt.trim());
+    const activeShots = enrichedShots.filter(s => s.prompt.trim());
 
-    setShots(prev => prev.map(s => ({
-      ...s, status: 'idle', videoUrl: undefined, sceneImageUrl: undefined, error: undefined, waitSeconds: undefined,
+    setShots(enrichedShots.map(s => ({
+      ...s, status: 'idle', videoUrl: undefined, error: undefined, waitSeconds: undefined,
     })));
     setPhase('generating');
 
@@ -88,7 +88,7 @@ export default function Drama() {
     }
 
     setPhase('theater');
-  }, [character, shots, generateShot]);
+  }, [character, generateShot]);
 
   const handleRegenShot = useCallback(async (shotId: string) => {
     if (!character) return;
@@ -112,7 +112,7 @@ export default function Drama() {
         <ScriptPage
           character={character}
           shots={shots}
-          onShotsChange={setShots}
+          onShotsChange={(updater) => setShots(updater)}
           onGenerate={handleGenerate}
           onBack={() => setPhase('setup')}
         />
