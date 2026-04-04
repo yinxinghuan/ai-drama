@@ -33,8 +33,11 @@ function buildPrompt(userPrompt: string, character: Character): string {
 export default function Drama() {
   const aigram = useAigram();
   const [phase, setPhase] = useState<Phase>('setup');
+  const [prevPhase, setPrevPhase] = useState<Phase>('generating');
   const [character, setCharacter] = useState<Character | null>(null);
   const [shots, setShots] = useState<Shot[]>(INITIAL_SHOTS);
+
+  const goTheater = (from: Phase) => { setPrevPhase(from); setPhase('theater'); };
 
   const handleSelectCharacter = useCallback(async (char: Character) => {
     // Enrich via public API (by name, no token needed) — gets head_url, avatar_describe, style
@@ -114,7 +117,7 @@ export default function Drama() {
   const handleLoadWork = useCallback((work: Work) => {
     setCharacter(work.character);
     setShots(work.shots);
-    setPhase('theater');
+    goTheater('works');
   }, []);
 
   const handleEditWork = useCallback((work: Work) => {
@@ -150,7 +153,7 @@ export default function Drama() {
         <GeneratingPage
           shots={shots}
           onRegen={handleRegenShot}
-          onPreview={() => setPhase('theater')}
+          onPreview={() => goTheater('generating')}
           onBack={() => {
             setShots(prev => prev.map(s => ({
               ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
@@ -163,6 +166,7 @@ export default function Drama() {
         <TheaterPage
           shots={shots}
           character={character}
+          onBack={() => setPhase(prevPhase)}
           onRestart={handleRestart}
           onRegenShot={handleRegenShot}
         />
