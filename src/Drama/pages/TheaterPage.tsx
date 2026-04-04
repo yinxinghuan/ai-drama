@@ -14,8 +14,11 @@ export default function TheaterPage({ shots, character, onRestart, onRegenShot }
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const allLoaded = playable.length > 0 && playable.every(s => loadedUrls.has(s.videoUrl!));
 
   const shot = playable[current];
 
@@ -58,13 +61,35 @@ export default function TheaterPage({ shots, character, onRestart, onRegenShot }
 
   return (
     <div className="ad-theater" onPointerDown={showControlsTemporarily}>
+      {/* Preload all videos silently */}
+      {playable.map(s => (
+        <video
+          key={s.videoUrl}
+          src={s.videoUrl}
+          preload="auto"
+          playsInline
+          muted
+          style={{ display: 'none' }}
+          onCanPlayThrough={() => setLoadedUrls(prev => new Set([...prev, s.videoUrl!]))}
+        />
+      ))}
+
+      {/* Loading overlay */}
+      {!allLoaded && (
+        <div className="ad-theater__loading">
+          <div className="ad-theater__loading-spinner" />
+          <p>正在加载 {loadedUrls.size} / {playable.length}</p>
+        </div>
+      )}
+
       {/* Video */}
       <video
         ref={videoRef}
         key={shot?.videoUrl}
         className={`ad-theater__video${fading ? ' ad-theater__video--fade' : ''}`}
+        style={{ opacity: allLoaded ? 1 : 0 }}
         src={shot?.videoUrl}
-        autoPlay
+        autoPlay={allLoaded}
         playsInline
         onEnded={() => goTo(current + 1)}
       />
