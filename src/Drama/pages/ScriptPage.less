@@ -249,6 +249,20 @@
   font-weight: 700;
 }
 
+.ad-shot__upload-btn {
+  width: 100%;
+  padding: 4px 0;
+  background: none;
+  border: 1px solid @border;
+  border-radius: 8px;
+  color: @text-dim;
+  font-size: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+}
+
 .ad-shot__remove {
   position: absolute;
   top: 10px;
