@@ -151,7 +151,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   };
 
   const addShot = () => {
-    onShotsChange(prev => prev.length >= 5 ? prev : [...prev, makeShot()]);
+    onShotsChange(prev => prev.length >= 8 ? prev : [...prev, makeShot()]);
   };
 
   const removeShot = (id: string) => {
@@ -304,9 +304,9 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
           );
         })}
 
-        {shots.length < 5 && (
+        {shots.length < 8 && (
           <button className="ad-add-shot" onPointerDown={addShot}>
-            + 添加镜头（{shots.length}/5）
+            + 添加镜头（{shots.length}/8）
           </button>
         )}
       </div>
