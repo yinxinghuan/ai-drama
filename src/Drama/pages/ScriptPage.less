@@ -180,13 +180,43 @@
   gap: 5px;
 }
 
-.ad-shot__frame-img {
+.ad-shot__frame-area {
+  display: block;
+  position: relative;
   width: 100%;
   aspect-ratio: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+
+  &--busy { pointer-events: none; }
+
+  &:active .ad-shot__frame-replace { opacity: 1; }
+}
+
+.ad-shot__frame-img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.4);
-  pointer-events: none;
+  display: block;
+}
+
+.ad-shot__frame-replace {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 
 .ad-shot__frame-spinner {
@@ -205,19 +235,33 @@
 
 .ad-shot__frame-empty {
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   border-radius: 8px;
   border: 1px dashed @border;
   background: rgba(255,255,255,0.02);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   font-size: 11px;
   color: @accent;
   font-weight: 600;
 
   &--dim { color: @text-dim; }
   &--loading { border-color: rgba(167, 139, 250, 0.4); }
+}
+
+.ad-shot__frame-upload-icon {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+.ad-shot__frame-upload-hint {
+  font-size: 9px;
+  font-weight: 400;
+  opacity: 0.6;
 }
 
 .ad-shot__frame-btn {
@@ -249,19 +293,6 @@
   font-weight: 700;
 }
 
-.ad-shot__upload-btn {
-  width: 100%;
-  padding: 4px 0;
-  background: none;
-  border: 1px solid @border;
-  border-radius: 8px;
-  color: @text-dim;
-  font-size: 10px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-
-  &:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
-}
 
 .ad-shot__remove {
   position: absolute;

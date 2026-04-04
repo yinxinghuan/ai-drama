@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import React from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
@@ -83,8 +83,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   const [showPresets, setShowPresets] = useState(false);
   const [frames, setFrames] = useState<Record<string, ShotFrames>>({});
   const [cooldown, setCooldown] = useState(0);
-  const uploadTargetRef = useRef<{ shotId: string; type: 'start' | 'end' } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => subscribeCooldown(setCooldown), []);
 
@@ -169,23 +167,17 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   // ── Upload ─────────────────────────────────────────────────────────────────
 
-  const triggerUpload = (shotId: string, type: 'start' | 'end') => {
-    uploadTargetRef.current = { shotId, type };
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, shotId: string, type: 'start' | 'end') => {
     const file = e.target.files?.[0];
-    const target = uploadTargetRef.current;
-    if (!file || !target) return;
+    if (!file) return;
     e.target.value = '';
-    patchFrame(target.shotId, target.type, { phase: 'downloading', wait: 0 });
+    patchFrame(shotId, type, { phase: 'downloading', wait: 0 });
     try {
       const url = await uploadImage(file);
-      patchFrame(target.shotId, target.type, { phase: 'idle', url });
+      patchFrame(shotId, type, { phase: 'idle', url });
     } catch (err) {
       console.error('上传失败', err);
-      patchFrame(target.shotId, target.type, ERROR);
+      patchFrame(shotId, type, ERROR);
     }
   };
 
@@ -207,13 +199,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   return (
     <div className="ad-script">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
       <div className="ad-script__header">
         <button className="ad-script__back" onPointerDown={onBack}>←</button>
         <div className="ad-script__char">
@@ -267,36 +252,45 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                   const frame = f[type];
                   const busy = isBusy(frame);
                   const isStart = type === 'start';
-                  const label = isStart ? '首帧' : '尾帧（可选）';
+                  const inputId = `upload-${shot.id}-${type}`;
                   return (
                     <div key={type} className="ad-shot__frame">
-                      {frame.url
-                        ? <img
-                            key={frame.url}
-                            className="ad-shot__frame-img"
-                            src={frame.url}
-                            alt={label}
-                            draggable={false}
-                            onLoad={() => patchFrame(shot.id, type, { phase: 'idle' })}
-                            onError={() => patchFrame(shot.id, type, ERROR)}
-                          />
-                        : <div className={`ad-shot__frame-empty ${!isStart ? 'ad-shot__frame-empty--dim' : ''} ${busy ? 'ad-shot__frame-empty--loading' : ''}`}>
-                            {busy ? <span className="ad-shot__frame-spinner" /> : label}
-                          </div>
-                      }
+                      <input
+                        id={inputId}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={e => handleFileChange(e, shot.id, type)}
+                        disabled={busy}
+                      />
+                      <label htmlFor={inputId} className={`ad-shot__frame-area ${busy ? 'ad-shot__frame-area--busy' : ''}`}>
+                        {frame.url
+                          ? <>
+                              <img
+                                key={frame.url}
+                                className="ad-shot__frame-img"
+                                src={frame.url}
+                                alt={isStart ? '首帧' : '尾帧'}
+                                draggable={false}
+                                onLoad={() => patchFrame(shot.id, type, { phase: 'idle' })}
+                                onError={() => patchFrame(shot.id, type, ERROR)}
+                              />
+                              <span className="ad-shot__frame-replace">换图</span>
+                            </>
+                          : <div className={`ad-shot__frame-empty ${!isStart ? 'ad-shot__frame-empty--dim' : ''} ${busy ? 'ad-shot__frame-empty--loading' : ''}`}>
+                              {busy
+                                ? <span className="ad-shot__frame-spinner" />
+                                : <><span className="ad-shot__frame-upload-icon">＋</span><span>{isStart ? '首帧' : '尾帧'}</span><span className="ad-shot__frame-upload-hint">点击上传</span></>
+                              }
+                            </div>
+                        }
+                      </label>
                       <button
                         className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
                         onPointerDown={() => { if (!busy && cooldown === 0) generateFrame(shot.id, shot.prompt, type, { cancelled: false }); }}
                         disabled={!hasPrompt || busy || cooldown > 0}
                       >
                         {btnContent(frame, isStart, cooldown)}
-                      </button>
-                      <button
-                        className={`ad-shot__upload-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''}`}
-                        onPointerDown={() => { if (!busy) triggerUpload(shot.id, type); }}
-                        disabled={busy}
-                      >
-                        {frame.url ? '换图' : '上传图片'}
                       </button>
                     </div>
                   );
