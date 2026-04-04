@@ -31,17 +31,17 @@ interface FrameLoadingState { start: FrameSlot; end: FrameSlot; }
 
 const IDLE_SLOT: FrameSlot = { state: 'idle', wait: 0 };
 
-function frameLabel(slot: FrameSlot, hasImage: boolean, globalCooldown: number): string {
+function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
-  if (globalCooldown > 0) return `${globalCooldown}s`;
+  if (cooldown > 0) return `${cooldown}s`;
   return hasImage ? '重新生成' : '生成首帧';
 }
 
-function endFrameLabel(slot: FrameSlot, hasImage: boolean, globalCooldown: number): string {
+function endFrameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
-  if (globalCooldown > 0) return `${globalCooldown}s`;
+  if (cooldown > 0) return `${cooldown}s`;
   return hasImage ? '重新生成' : '+ 尾帧';
 }
 
@@ -50,7 +50,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   const [frameLoading, setFrameLoading] = useState<Record<string, FrameLoadingState>>({});
   const [cooldownLeft, setCooldownLeft] = useState(0);
 
-  // Subscribe to global image API cooldown
   useEffect(() => subscribeCooldown(setCooldownLeft), []);
 
   const setFrameSlot = (id: string, type: 'start' | 'end', slot: FrameSlot) => {
@@ -90,6 +89,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       () => { // onStart: slot time reached, HTTP request fires
         if (!signal.cancelled) setFrameSlot(shot.id, type, { state: 'generating', wait: 0 });
       },
+      () => signal.cancelled, // isCancelled: release slot without penalty if cancelled
     ).then(url => {
       if (signal.cancelled) return;
       onShotsChange(prev => prev.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
@@ -104,20 +104,10 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     generateFrameFor(shot, type, { cancelled: false });
   };
 
-  // Auto-generate start frames for pre-filled shots on mount (StrictMode-safe)
+  // Auto-generate start frames on mount and when template applied (shot ids change)
   useEffect(() => {
     const signal = { cancelled: false };
-    shots.filter(s => s.prompt.trim() && !s.startImageUrl)
-      .forEach(shot => generateFrameFor(shot, 'start', signal));
-    return () => { signal.cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Auto-generate when template applied (shot ids change)
-  useEffect(() => {
-    const signal = { cancelled: false };
-    const toGen = shots.filter(s => s.prompt.trim() && !s.startImageUrl
-      && (!frameLoading[s.id] || frameLoading[s.id].start.state === 'idle'));
+    const toGen = shots.filter(s => s.prompt.trim() && !s.startImageUrl);
     if (toGen.length === 0) return;
     toGen.forEach(shot => generateFrameFor(shot, 'start', signal));
     return () => { signal.cancelled = true; };
@@ -207,7 +197,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                   <button
                     className={`ad-shot__frame-btn ${loading.start.state === 'waiting' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'start')}
-                    disabled={!hasPrompt || startBusy || cooldownLeft > 0}
+                    disabled={!hasPrompt || startBusy}
                   >
                     {frameLabel(loading.start, !!shot.startImageUrl, cooldownLeft)}
 
@@ -224,7 +214,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                   <button
                     className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end.state === 'waiting' ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'end')}
-                    disabled={!hasPrompt || endBusy || cooldownLeft > 0}
+                    disabled={!hasPrompt || endBusy}
                   >
                     {endFrameLabel(loading.end, !!shot.endImageUrl, cooldownLeft)}
 

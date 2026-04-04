@@ -5,16 +5,10 @@ const IMAGE_API = import.meta.env.DEV
 
 const COOLDOWN_MS = 75_000;
 
-// Slot reservation: each request reserves the next available 75s slot
-// JS is single-threaded so reserveSlot() is atomic
-let nextSlot = 0; // epoch ms when the next request can fire
-
-function reserveSlot(): number {
-  const now = Date.now();
-  const startAt = Math.max(now, nextSlot);
-  nextSlot = startAt + COOLDOWN_MS;
-  return Math.max(0, startAt - now); // ms to wait before firing
-}
+// Serial queue for scheduling only — HTTP fetches run concurrently outside the queue.
+// First call always fires immediately; subsequent calls wait only if within 75s of the last send.
+let lastSendTime = 0;
+let sendQueue: Promise<void> = Promise.resolve();
 
 // Pub-sub for global cooldown display
 type CooldownListener = (remaining: number) => void;
@@ -28,46 +22,68 @@ export function subscribeCooldown(listener: CooldownListener): () => void {
   };
 }
 
-// Broadcast the time until the *first* available slot
-function broadcastGlobalCooldown() {
-  const left = Math.max(0, Math.ceil((nextSlot - COOLDOWN_MS - Date.now()) / 1000));
+function broadcastCooldown() {
+  const left = lastSendTime === 0
+    ? 0
+    : Math.max(0, Math.ceil((lastSendTime + COOLDOWN_MS - Date.now()) / 1000));
   cooldownListeners.forEach(l => l(left));
 }
 
 /**
  * Generate a scene image.
- * Slot is reserved synchronously on call — subsequent calls queue automatically.
- * @param onWaiting  called with remaining seconds while waiting for slot (fires every second)
- * @param onStart    called when HTTP request actually fires
+ * Requests are queued and serialized for scheduling — only the wait phase is serial.
+ * The HTTP fetch runs concurrently after the slot is claimed.
+ * @param onWaiting    called with remaining seconds while waiting in queue
+ * @param onStart      called when HTTP request fires
+ * @param isCancelled  if returns true before the request fires, slot is released without penalty
  */
 export function generateSceneImage(
   prompt: string,
   refUrl: string,
   onWaiting?: (remaining: number) => void,
   onStart?: () => void,
+  isCancelled?: () => boolean,
 ): Promise<string> {
-  const waitMs = reserveSlot(); // reserve slot immediately (synchronous)
-  broadcastGlobalCooldown();
+  // Reserve a position in the send queue
+  let resolveReady!: () => void;
+  let rejectReady!: (e: Error) => void;
+  const ready = new Promise<void>((res, rej) => { resolveReady = res; rejectReady = rej; });
 
-  return (async () => {
+  sendQueue = sendQueue.then(async () => {
+    if (isCancelled?.()) { rejectReady(new Error('cancelled')); return; }
+
+    const now = Date.now();
+    const waitMs = lastSendTime === 0 ? 0 : Math.max(0, COOLDOWN_MS - (now - lastSendTime));
+
     if (waitMs > 0) {
       let remaining = Math.ceil(waitMs / 1000);
       onWaiting?.(remaining);
+      broadcastCooldown();
       await new Promise<void>(resolve => {
         const interval = setInterval(() => {
+          if (isCancelled?.()) { clearInterval(interval); resolve(); return; }
           remaining--;
           const left = Math.max(0, remaining);
           onWaiting?.(left);
-          broadcastGlobalCooldown();
+          broadcastCooldown();
           if (left <= 0) { clearInterval(interval); resolve(); }
         }, 1000);
       });
     }
 
-    broadcastGlobalCooldown();
-    onStart?.();
+    // If cancelled during wait, release without marking lastSendTime
+    if (isCancelled?.()) { rejectReady(new Error('cancelled')); return; }
 
-    const res = await fetch(IMAGE_API, {
+    // Claim the slot and let the queue move on — HTTP fetch runs independently
+    lastSendTime = Date.now();
+    broadcastCooldown();
+    onStart?.();
+    resolveReady();
+  });
+
+  // HTTP fetch starts after slot is claimed, runs concurrently with next queued scheduling
+  return ready.then(() =>
+    fetch(IMAGE_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -75,11 +91,14 @@ export function generateSceneImage(
         params: { url: refUrl, prompt, user_id: 618336286 },
       }),
       signal: AbortSignal.timeout(360_000),
-    });
-
-    if (!res.ok) throw new Error(`生图请求失败: ${res.status}`);
-    const data = await res.json() as { code: number; url: string };
-    if (data.code !== 200 || !data.url) throw new Error('生图失败，请重试');
-    return data.url;
-  })();
+    })
+    .then(res => {
+      if (!res.ok) throw new Error(`生图请求失败: ${res.status}`);
+      return res.json() as Promise<{ code: number; url: string }>;
+    })
+    .then(data => {
+      if (data.code !== 200 || !data.url) throw new Error('生图失败，请重试');
+      return data.url;
+    })
+  );
 }
