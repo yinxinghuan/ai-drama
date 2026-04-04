@@ -60,7 +60,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   };
 
   const updatePrompt = (id: string, prompt: string) => {
-    onShotsChange(shots.map(s => s.id === id
+    onShotsChange(prev => prev.map(s => s.id === id
       ? { ...s, prompt, startImageUrl: undefined, endImageUrl: undefined }
       : s));
   };
@@ -72,12 +72,17 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   ) => {
     if (!shot.prompt.trim() || signal.cancelled) return;
 
-    // End frame: emphasize the concluded state of the action; use start frame as ref for continuity
+    // End frame: use only the final clause(s) of the description so the pose differs from start frame
+    const parts = shot.prompt.split('，');
+    const endShotPrompt = parts.length > 2
+      ? [parts[0], ...parts.slice(-2)].join('，')  // scene context + last 2 actions
+      : shot.prompt;
     const basePrompt = buildImagePrompt(shot.prompt, character);
     const prompt = type === 'end'
-      ? basePrompt + ', end of scene, action concluded, final moment, arrived'
+      ? buildImagePrompt(endShotPrompt, character) + ', final moment'
       : basePrompt;
-    const refUrl = type === 'end' && shot.startImageUrl ? shot.startImageUrl : character.head_url;
+    // Always use character head as ref — start frame ref makes end look identical
+    const refUrl = character.head_url;
     const urlKey = type === 'start' ? 'startImageUrl' : 'endImageUrl';
 
     generateSceneImage(
