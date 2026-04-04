@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import React from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
-import { generateSceneImage, subscribeCooldown } from '../utils/imageApi';
+import { generateSceneImage, subscribeCooldown, uploadImage } from '../utils/imageApi';
 import './ScriptPage.less';
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -83,6 +83,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   const [showPresets, setShowPresets] = useState(false);
   const [frames, setFrames] = useState<Record<string, ShotFrames>>({});
   const [cooldown, setCooldown] = useState(0);
+  const uploadTargetRef = useRef<{ shotId: string; type: 'start' | 'end' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => subscribeCooldown(setCooldown), []);
 
@@ -165,6 +167,28 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     setShowPresets(false);
   };
 
+  // ── Upload ─────────────────────────────────────────────────────────────────
+
+  const triggerUpload = (shotId: string, type: 'start' | 'end') => {
+    uploadTargetRef.current = { shotId, type };
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const target = uploadTargetRef.current;
+    if (!file || !target) return;
+    e.target.value = '';
+    patchFrame(target.shotId, target.type, { phase: 'downloading', wait: 0 });
+    try {
+      const url = await uploadImage(file);
+      patchFrame(target.shotId, target.type, { phase: 'idle', url });
+    } catch (err) {
+      console.error('上传失败', err);
+      patchFrame(target.shotId, target.type, ERROR);
+    }
+  };
+
   // Enrich shots with generated URLs before handing off to Drama.tsx
   const handleGenerate = () => {
     const enriched = shots.map(s => ({
@@ -183,6 +207,13 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   return (
     <div className="ad-script">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
       <div className="ad-script__header">
         <button className="ad-script__back" onPointerDown={onBack}>←</button>
         <div className="ad-script__char">
@@ -259,6 +290,13 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                         disabled={!hasPrompt || busy || cooldown > 0}
                       >
                         {btnContent(frame, isStart, cooldown)}
+                      </button>
+                      <button
+                        className={`ad-shot__upload-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''}`}
+                        onPointerDown={() => { if (!busy) triggerUpload(shot.id, type); }}
+                        disabled={busy}
+                      >
+                        {frame.url ? '换图' : '上传图片'}
                       </button>
                     </div>
                   );
