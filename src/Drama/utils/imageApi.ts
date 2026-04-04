@@ -29,6 +29,23 @@ function broadcastCooldown() {
   cooldownListeners.forEach(l => l(left));
 }
 
+// After a request fires, keep broadcasting the countdown until it reaches 0.
+// Without this, the global cooldownLeft gets set to 75 and never decrements
+// because the queue's setInterval only runs while waiting for a slot.
+let broadcastTimer: ReturnType<typeof setInterval> | null = null;
+
+function startCooldownBroadcast() {
+  if (broadcastTimer) clearInterval(broadcastTimer);
+  broadcastTimer = setInterval(() => {
+    const left = Math.max(0, Math.ceil((lastSendTime + COOLDOWN_MS - Date.now()) / 1000));
+    cooldownListeners.forEach(l => l(left));
+    if (left <= 0) {
+      clearInterval(broadcastTimer!);
+      broadcastTimer = null;
+    }
+  }, 1000);
+}
+
 /**
  * Generate a scene image.
  * Requests are queued and serialized for scheduling — only the wait phase is serial.
@@ -77,6 +94,7 @@ export function generateSceneImage(
     // Claim the slot and let the queue move on — HTTP fetch runs independently
     lastSendTime = Date.now();
     broadcastCooldown();
+    startCooldownBroadcast(); // keep global cooldownLeft ticking down after request fires
     onStart?.();
     resolveReady();
   });

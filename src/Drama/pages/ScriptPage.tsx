@@ -120,13 +120,11 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
   }, [shots.map(s => s.id).join(',')]);
 
   const addShot = () => {
-    if (shots.length >= 5) return;
-    onShotsChange([...shots, makeShot()]);
+    onShotsChange(prev => prev.length >= 5 ? prev : [...prev, makeShot()]);
   };
 
   const removeShot = (id: string) => {
-    if (shots.length <= 1) return;
-    onShotsChange(shots.filter(s => s.id !== id));
+    onShotsChange(prev => prev.length <= 1 ? prev : prev.filter(s => s.id !== id));
   };
 
   const applyTemplate = (prompts: string[]) => {
