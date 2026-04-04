@@ -147,8 +147,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   const updatePrompt = (id: string, prompt: string) => {
     onShotsChange(prev => prev.map(s => s.id === id ? { ...s, prompt } : s));
-    // Clear frames so stale image doesn't carry over to new prompt
-    setFrames(prev => { const n = { ...prev }; delete n[id]; return n; });
+    // Keep existing frames; stale images remain visible until user re-generates
   };
 
   const addShot = () => {
