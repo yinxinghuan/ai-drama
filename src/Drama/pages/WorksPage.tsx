@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Work } from '../types';
-import { loadWorks, deleteWork } from '../utils/works';
+import { loadWorksLocal, loadWorksRemote, deleteWork } from '../utils/works';
 import './WorksPage.less';
 
 interface Props {
+  uid?: string;
   onBack: () => void;
   onPlay: (work: Work) => void;
   onEdit: (work: Work) => void;
@@ -14,13 +15,28 @@ function formatDate(ts: number): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export default function WorksPage({ onBack, onPlay, onEdit }: Props) {
-  const [works, setWorks] = useState<Work[]>(() => loadWorks());
+export default function WorksPage({ uid, onBack, onPlay, onEdit }: Props) {
+  const [works, setWorks] = useState<Work[]>(() => loadWorksLocal());
+  const [loading, setLoading] = useState(!!uid);
   const [copyHint, setCopyHint] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
-    deleteWork(id);
+  // Load from cloud when uid is available
+  useEffect(() => {
+    if (!uid) return;
+    setLoading(true);
+    loadWorksRemote(uid)
+      .then(setWorks)
+      .catch(() => setWorks(loadWorksLocal())) // fallback to local on error
+      .finally(() => setLoading(false));
+  }, [uid]);
+
+  const handleDelete = async (id: string) => {
     setWorks(prev => prev.filter(w => w.id !== id));
+    try {
+      await deleteWork(uid, id);
+    } catch {
+      // best-effort; UI already updated
+    }
   };
 
   const handleShare = (work: Work) => {
@@ -40,7 +56,9 @@ export default function WorksPage({ onBack, onPlay, onEdit }: Props) {
         <span className="ad-works__title">我的作品</span>
       </div>
 
-      {works.length === 0 ? (
+      {loading ? (
+        <div className="ad-works__loading">加载中…</div>
+      ) : works.length === 0 ? (
         <div className="ad-works__empty">
           <p>还没有作品</p>
           <p className="ad-works__empty-sub">生成第一部短剧吧</p>
