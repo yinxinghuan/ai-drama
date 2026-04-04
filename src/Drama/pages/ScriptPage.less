@@ -124,10 +124,10 @@
 }
 
 .ad-shot__num {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: @accent;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -137,8 +137,8 @@
   background: transparent;
   border: none;
   color: @text;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   resize: none;
   outline: none;
   font-family: inherit;
@@ -149,19 +149,22 @@
 .ad-shot__hints {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .ad-shot__hint {
-  font-size: 11px;
+  font-size: 12px;
   color: @text-dim;
   background: rgba(255,255,255,0.04);
   border: 1px solid @border;
-  border-radius: 12px;
-  padding: 3px 8px;
+  border-radius: 14px;
+  padding: 6px 12px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
 
   &:active { border-color: @accent; color: @text; }
 }
@@ -170,24 +173,24 @@
 .ad-shot__frames {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .ad-shot__frame {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .ad-shot__frame-area {
   display: block;
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
 
   &--busy { pointer-events: none; }
@@ -199,7 +202,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid rgba(167, 139, 250, 0.4);
   display: block;
 }
@@ -210,11 +213,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0,0,0,0.5);
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 10px;
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -236,15 +239,15 @@
 .ad-shot__frame-empty {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  border: 1px dashed @border;
+  border-radius: 10px;
+  border: 1.5px dashed @border;
   background: rgba(255,255,255,0.02);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 13px;
   color: @accent;
   font-weight: 600;
 
@@ -253,29 +256,31 @@
 }
 
 .ad-shot__frame-upload-icon {
-  font-size: 22px;
+  font-size: 28px;
   line-height: 1;
   font-weight: 300;
 }
 
 .ad-shot__frame-upload-hint {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
-  opacity: 0.6;
+  opacity: 0.55;
+  margin-top: 2px;
 }
 
 .ad-shot__frame-btn {
   width: 100%;
-  padding: 5px 0;
+  padding: 10px 4px;
   background: rgba(167,139,250,0.15);
   border: 1px solid rgba(167,139,250,0.3);
-  border-radius: 8px;
+  border-radius: 10px;
   color: @accent;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.2s, color 0.2s;
+  min-height: 36px;
 
   &--dim {
     background: rgba(255,255,255,0.04);
@@ -296,15 +301,20 @@
 
 .ad-shot__remove {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.08);
   border: none;
+  border-radius: 50%;
   color: @text-dim;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  padding: 2px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ad-add-shot {
