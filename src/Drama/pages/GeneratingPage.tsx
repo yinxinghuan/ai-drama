@@ -39,7 +39,7 @@ export default function GeneratingPage({ shots, totalCount }: Props) {
               {shot.status === 'waiting' && <><span className="ad-gen__cooldown">{shot.waitSeconds ?? 0}s</span><span className="ad-gen__step-label">冷却中</span></>}
               {shot.status === 'generating' && <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">生成视频</span></>}
               {shot.status === 'done' && <span className="ad-gen__check">✓</span>}
-              {shot.status === 'error' && <span className="ad-gen__err">✕</span>}
+              {shot.status === 'error' && <span className="ad-gen__err" title={shot.error}>✕ {shot.error}</span>}
             </div>
           </div>
         ))}
