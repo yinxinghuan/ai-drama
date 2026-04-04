@@ -111,6 +111,11 @@ export default function SetupPage({ aigram, onSelect, onOpenWorks }: Props) {
                 {all.map(char => (
                   <CharCard key={char.telegram_id} char={char} isMe={false} onSelect={() => onSelect(char)} />
                 ))}
+                <CharCard
+                  char={{ telegram_id: '__none__', name: '无主角', head_url: '' }}
+                  isMe={false}
+                  onSelect={() => onSelect({ telegram_id: '__none__', name: '无主角', head_url: '' })}
+                />
               </div>
             </>
           )}
