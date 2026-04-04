@@ -25,8 +25,8 @@ function buildImagePrompt(userPrompt: string, character: Character): string {
   return parts.join(', ');
 }
 
-type FrameState = 'idle' | 'waiting' | 'generating' | 'error';
-interface FrameSlot { state: FrameState; wait: number; } // wait: per-slot countdown seconds
+type FrameState = 'idle' | 'waiting' | 'generating' | 'downloading' | 'error';
+interface FrameSlot { state: FrameState; wait: number; }
 interface FrameLoadingState { start: FrameSlot; end: FrameSlot; }
 
 const IDLE_SLOT: FrameSlot = { state: 'idle', wait: 0 };
@@ -34,6 +34,7 @@ const ERROR_SLOT: FrameSlot = { state: 'error', wait: 0 };
 
 function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
+  if (slot.state === 'downloading') return '下载中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
   if (slot.state === 'error') return '生成失败，重试';
   if (cooldown > 0) return `冷却中 ${cooldown}s`;
@@ -42,6 +43,7 @@ function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): strin
 
 function endFrameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
+  if (slot.state === 'downloading') return '下载中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
   if (slot.state === 'error') return '生成失败，重试';
   if (cooldown > 0) return `冷却中 ${cooldown}s`;
@@ -100,14 +102,14 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       () => signal.cancelled, // isCancelled: release slot without penalty if cancelled
     ).then(url => {
       if (signal.cancelled) return;
+      setFrameSlot(shot.id, type, { state: 'downloading', wait: 0 });
       onShotsChange(prev => prev.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
+      // idle is set via onLoad on the <img> element
     }).catch((err: unknown) => {
       if (!signal.cancelled) {
         console.error('生图失败', err);
         setFrameSlot(shot.id, type, ERROR_SLOT);
       }
-    }).finally(() => {
-      // only reset to idle on success (error state persists until retry)
     });
   };
 
@@ -175,8 +177,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         {shots.map((shot, i) => {
           const loading = frameLoading[shot.id] ?? { start: IDLE_SLOT, end: IDLE_SLOT };
           const hasPrompt = shot.prompt.trim().length > 0;
-          const startBusy = loading.start.state === 'waiting' || loading.start.state === 'generating';
-          const endBusy = loading.end.state === 'waiting' || loading.end.state === 'generating';
+          const startBusy = loading.start.state === 'waiting' || loading.start.state === 'generating' || loading.start.state === 'downloading';
+          const endBusy = loading.end.state === 'waiting' || loading.end.state === 'generating' || loading.end.state === 'downloading';
           return (
             <div key={shot.id} className="ad-shot">
               <div className="ad-shot__num">镜头 {i + 1}</div>
@@ -198,7 +200,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
               <div className="ad-shot__frames">
                 <div className="ad-shot__frame">
                   {shot.startImageUrl
-                    ? <img className="ad-shot__frame-img" src={shot.startImageUrl} alt="首帧" draggable={false} />
+                    ? <img className="ad-shot__frame-img" src={shot.startImageUrl} alt="首帧" draggable={false}
+                        onLoad={() => setFrameSlot(shot.id, 'start', IDLE_SLOT)} />
                     : <div className={`ad-shot__frame-empty ${startBusy ? 'ad-shot__frame-empty--loading' : ''}`}>
                         {startBusy ? <span className="ad-shot__frame-spinner" /> : '首帧'}
                       </div>
@@ -215,7 +218,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
                 <div className="ad-shot__frame">
                   {shot.endImageUrl
-                    ? <img className="ad-shot__frame-img" src={shot.endImageUrl} alt="尾帧" draggable={false} />
+                    ? <img className="ad-shot__frame-img" src={shot.endImageUrl} alt="尾帧" draggable={false}
+                        onLoad={() => setFrameSlot(shot.id, 'end', IDLE_SLOT)} />
                     : <div className={`ad-shot__frame-empty ad-shot__frame-empty--dim ${endBusy ? 'ad-shot__frame-empty--loading' : ''}`}>
                         {endBusy ? <span className="ad-shot__frame-spinner" /> : '尾帧（可选）'}
                       </div>
