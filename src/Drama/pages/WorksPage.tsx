@@ -67,13 +67,15 @@ export default function WorksPage({ uid, onBack, onPlay, onEdit }: Props) {
         <div className="ad-works__list">
           {works.map(work => {
             const videoCount = work.shots.filter(s => s.videoUrl).length;
-            const firstVideo = work.shots.find(s => s.videoUrl)?.videoUrl;
+            const firstShot = work.shots.find(s => s.videoUrl);
+            const firstVideo = firstShot?.videoUrl;
+            const thumbPoster = firstShot?.startImageUrl;
             return (
               <div key={work.id} className="ad-work-card">
                 {/* Thumbnail */}
                 <div className="ad-work-card__thumb" onPointerDown={() => onPlay(work)}>
                   {firstVideo
-                    ? <video src={firstVideo} playsInline muted preload="metadata" />
+                    ? <video src={firstVideo} poster={thumbPoster} playsInline muted preload="metadata" />
                     : <div className="ad-work-card__thumb-empty">▶</div>
                   }
                   <div className="ad-work-card__play-icon">▶</div>

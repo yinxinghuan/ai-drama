@@ -158,7 +158,7 @@ export default function Drama() {
         <GeneratingPage
           shots={shots}
           onRegen={handleRegenShot}
-          onPreview={() => goTheater('generating')}
+          onPreview={() => goTheater('works')}
           onBack={() => {
             setShots(prev => prev.map(s => ({
               ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
