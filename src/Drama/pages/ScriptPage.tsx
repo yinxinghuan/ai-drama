@@ -25,15 +25,17 @@ function buildImagePrompt(userPrompt: string, character: Character): string {
   return parts.join(', ');
 }
 
-type FrameState = 'idle' | 'waiting' | 'generating';
+type FrameState = 'idle' | 'waiting' | 'generating' | 'error';
 interface FrameSlot { state: FrameState; wait: number; } // wait: per-slot countdown seconds
 interface FrameLoadingState { start: FrameSlot; end: FrameSlot; }
 
 const IDLE_SLOT: FrameSlot = { state: 'idle', wait: 0 };
+const ERROR_SLOT: FrameSlot = { state: 'error', wait: 0 };
 
 function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
+  if (slot.state === 'error') return '生成失败，重试';
   if (cooldown > 0) return `冷却中 ${cooldown}s`;
   return hasImage ? '重新生成' : '生成首帧';
 }
@@ -41,6 +43,7 @@ function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): strin
 function endFrameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
+  if (slot.state === 'error') return '生成失败，重试';
   if (cooldown > 0) return `冷却中 ${cooldown}s`;
   return hasImage ? '重新生成' : '+ 尾帧';
 }
@@ -98,10 +101,13 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     ).then(url => {
       if (signal.cancelled) return;
       onShotsChange(prev => prev.map(s => s.id === shot.id ? { ...s, [urlKey]: url } : s));
-    }).catch(() => {
-      // silently fail — user can retry
+    }).catch((err: unknown) => {
+      if (!signal.cancelled) {
+        console.error('生图失败', err);
+        setFrameSlot(shot.id, type, ERROR_SLOT);
+      }
     }).finally(() => {
-      if (!signal.cancelled) setFrameSlot(shot.id, type, IDLE_SLOT);
+      // only reset to idle on success (error state persists until retry)
     });
   };
 
@@ -169,8 +175,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         {shots.map((shot, i) => {
           const loading = frameLoading[shot.id] ?? { start: IDLE_SLOT, end: IDLE_SLOT };
           const hasPrompt = shot.prompt.trim().length > 0;
-          const startBusy = loading.start.state !== 'idle';
-          const endBusy = loading.end.state !== 'idle';
+          const startBusy = loading.start.state === 'waiting' || loading.start.state === 'generating';
+          const endBusy = loading.end.state === 'waiting' || loading.end.state === 'generating';
           return (
             <div key={shot.id} className="ad-shot">
               <div className="ad-shot__num">镜头 {i + 1}</div>

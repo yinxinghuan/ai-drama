@@ -22,13 +22,6 @@ export function subscribeCooldown(listener: CooldownListener): () => void {
   };
 }
 
-function broadcastCooldown() {
-  const left = lastSendTime === 0
-    ? 0
-    : Math.max(0, Math.ceil((lastSendTime + COOLDOWN_MS - Date.now()) / 1000));
-  cooldownListeners.forEach(l => l(left));
-}
-
 // After a request fires, keep broadcasting the countdown until it reaches 0.
 // Without this, the global cooldownLeft gets set to 20 and never decrements
 // because the queue's setInterval only runs while waiting for a slot.
@@ -75,14 +68,13 @@ export function generateSceneImage(
     if (waitMs > 0) {
       let remaining = Math.ceil(waitMs / 1000);
       onWaiting?.(remaining);
-      broadcastCooldown();
+      // Global countdown is driven by startCooldownBroadcast — don't double-broadcast here
       await new Promise<void>(resolve => {
         const interval = setInterval(() => {
           if (isCancelled?.()) { clearInterval(interval); resolve(); return; }
           remaining--;
           const left = Math.max(0, remaining);
-          onWaiting?.(left);
-          broadcastCooldown();
+          onWaiting?.(left); // per-slot countdown only; global handled by startCooldownBroadcast
           if (left <= 0) { clearInterval(interval); resolve(); }
         }, 1000);
       });
@@ -93,8 +85,7 @@ export function generateSceneImage(
 
     // Claim the slot and let the queue move on — HTTP fetch runs independently
     lastSendTime = Date.now();
-    broadcastCooldown();
-    startCooldownBroadcast(); // keep global cooldownLeft ticking down after request fires
+    startCooldownBroadcast(); // sole driver of global cooldownLeft from here on
     onStart?.();
     resolveReady();
   });
