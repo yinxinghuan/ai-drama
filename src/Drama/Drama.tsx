@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
-import type { Character, Shot, Phase } from './types';
+import type { Character, Shot, Phase, Work } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage } from './utils/imageApi';
 import { generateVideo, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
+import { saveWork } from './utils/works';
 import SetupPage from './pages/SetupPage';
 import ScriptPage from './pages/ScriptPage';
 import GeneratingPage from './pages/GeneratingPage';
 import TheaterPage from './pages/TheaterPage';
+import WorksPage from './pages/WorksPage';
 import './Drama.less';
 
 function makeShot(prompt = ''): Shot {
@@ -87,6 +89,13 @@ export default function Drama() {
       await generateShot(shot, character);
     }
 
+    // Auto-save to works
+    setShots(prev => {
+      const work: Work = { id: crypto.randomUUID(), createdAt: Date.now(), character, shots: prev };
+      saveWork(work);
+      return prev;
+    });
+
     setPhase('theater');
   }, [character, generateShot]);
 
@@ -98,17 +107,37 @@ export default function Drama() {
   }, [character, shots, generateShot]);
 
   const handleRestart = () => {
-    // Return to script page keeping character + shots, just clear results
     setShots(prev => prev.map(s => ({
       ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
     })));
     setPhase('script');
   };
 
+  const handleLoadWork = useCallback((work: Work) => {
+    setCharacter(work.character);
+    setShots(work.shots);
+    setPhase('theater');
+  }, []);
+
+  const handleEditWork = useCallback((work: Work) => {
+    setCharacter(work.character);
+    setShots(work.shots.map(s => ({
+      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
+    })));
+    setPhase('script');
+  }, []);
+
   return (
     <div className="ad-root">
       {phase === 'setup' && (
-        <SetupPage aigram={aigram} onSelect={handleSelectCharacter} />
+        <SetupPage aigram={aigram} onSelect={handleSelectCharacter} onOpenWorks={() => setPhase('works')} />
+      )}
+      {phase === 'works' && (
+        <WorksPage
+          onBack={() => setPhase('setup')}
+          onPlay={handleLoadWork}
+          onEdit={handleEditWork}
+        />
       )}
       {phase === 'script' && character && (
         <ScriptPage
