@@ -50,6 +50,25 @@ export default {
 
     const url = new URL(request.url);
 
+    // /upload: accept raw image body and upload to OSS
+    if (url.pathname === '/upload') {
+      try {
+        const contentType = request.headers.get('Content-Type') || 'image/png';
+        const data = await request.arrayBuffer();
+        const ext = contentType.includes('webp') ? 'webp' : contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'png';
+        const key = `prod/video/drama/upload_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const stableUrl = await uploadToOSS(data, key, contentType, env.OSS_KEY_ID, env.OSS_SECRET);
+        return new Response(JSON.stringify({ url: stableUrl }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: String(e) }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+    }
+
     // /rehost: fetch a temporary image URL and rehost it on OSS
     // POST { "url": "https://cdn.aiwaves.tech/..." }
     // Returns { "url": "https://cdn.aiwaves.tech/prod/video/drama/..." }

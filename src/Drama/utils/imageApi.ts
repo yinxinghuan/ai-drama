@@ -4,6 +4,18 @@ const IMAGE_API = import.meta.env.DEV
   : 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
 
 const REHOST_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/rehost';
+const UPLOAD_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/upload';
+
+export async function uploadImage(file: File): Promise<string> {
+  const res = await fetch(UPLOAD_API, {
+    method: 'POST',
+    headers: { 'Content-Type': file.type || 'image/png' },
+    body: file,
+  });
+  const data = await res.json() as { url?: string; error?: string };
+  if (!data.url) throw new Error(data.error ?? 'upload failed');
+  return data.url;
+}
 
 /** Rehost a temporary CDN URL to R2 so the video server can access it stably. */
 async function rehostImage(tempUrl: string): Promise<string> {
