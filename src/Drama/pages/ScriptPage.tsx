@@ -195,9 +195,9 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                       </div>
                   }
                   <button
-                    className={`ad-shot__frame-btn ${loading.start.state === 'waiting' ? 'ad-shot__frame-btn--queued' : ''}`}
+                    className={`ad-shot__frame-btn ${loading.start.state === 'waiting' || (loading.start.state === 'idle' && cooldownLeft > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'start')}
-                    disabled={!hasPrompt || startBusy}
+                    disabled={!hasPrompt || startBusy || cooldownLeft > 0}
                   >
                     {frameLabel(loading.start, !!shot.startImageUrl, cooldownLeft)}
 
@@ -212,9 +212,9 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                       </div>
                   }
                   <button
-                    className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end.state === 'waiting' ? 'ad-shot__frame-btn--queued' : ''}`}
+                    className={`ad-shot__frame-btn ad-shot__frame-btn--dim ${loading.end.state === 'waiting' || (loading.end.state === 'idle' && cooldownLeft > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
                     onPointerDown={() => generateFrame(shot, 'end')}
-                    disabled={!hasPrompt || endBusy}
+                    disabled={!hasPrompt || endBusy || cooldownLeft > 0}
                   >
                     {endFrameLabel(loading.end, !!shot.endImageUrl, cooldownLeft)}
 
