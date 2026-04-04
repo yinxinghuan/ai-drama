@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import type { Character, Shot } from '../types';
 import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
 import { generateSceneImage, subscribeCooldown } from '../utils/imageApi';
@@ -61,16 +62,17 @@ function isBusy(f: FrameData): boolean {
   return f.phase === 'waiting' || f.phase === 'generating' || f.phase === 'downloading';
 }
 
-function btnLabel(f: FrameData, isStart: boolean, cooldown: number): string {
-  // Active states — phase takes full label
+function btnContent(f: FrameData, isStart: boolean, cooldown: number): React.ReactNode {
   if (f.phase === 'waiting')     return f.wait > 0 ? `${f.wait}s` : '即将生成…';
   if (f.phase === 'generating')  return '生成中…';
   if (f.phase === 'downloading') return '下载中…';
   if (f.phase === 'error')       return '生成失败，重试';
 
-  // Idle — show action label first, then cooldown suffix if applicable
   const action = f.url ? '重新生成' : (isStart ? '生成首帧' : '+ 尾帧');
-  return cooldown > 0 ? `${action}（冷却中 ${cooldown}s）` : action;
+  if (cooldown > 0) {
+    return <>{action} <span className="ad-shot__frame-btn-cd">{cooldown}s</span></>;
+  }
+  return action;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -255,7 +257,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                         onPointerDown={() => generateFrame(shot.id, shot.prompt, type, { cancelled: false })}
                         disabled={!hasPrompt || busy || cooldown > 0}
                       >
-                        {btnLabel(frame, isStart, cooldown)}
+                        {btnContent(frame, isStart, cooldown)}
                       </button>
                     </div>
                   );
