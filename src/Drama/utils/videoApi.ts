@@ -1,6 +1,4 @@
-const API_URL = import.meta.env.DEV
-  ? 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443/video'
-  : 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/video';
+const API_URL = 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443/video';
 const COOLDOWN_MS = 100_000;
 
 let lastVideoCallTime = 0;
