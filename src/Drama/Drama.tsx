@@ -98,9 +98,11 @@ export default function Drama() {
   }, [character, shots, generateShot]);
 
   const handleRestart = () => {
-    setShots(INITIAL_SHOTS.map(s => makeShot(s.prompt)));
-    setCharacter(null);
-    setPhase('setup');
+    // Return to script page keeping character + shots, just clear results
+    setShots(prev => prev.map(s => ({
+      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
+    })));
+    setPhase('script');
   };
 
   return (
