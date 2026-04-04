@@ -62,16 +62,15 @@ function isBusy(f: FrameData): boolean {
 }
 
 function btnLabel(f: FrameData, isStart: boolean, cooldown: number): string {
-  switch (f.phase) {
-    case 'waiting':     return f.wait > 0 ? `${f.wait}s` : '即将生成…';
-    case 'generating':  return '生成中…';
-    case 'downloading': return '下载中…';
-    case 'error':       return '生成失败，重试';
-    default:
-      if (cooldown > 0) return `冷却中 ${cooldown}s`;
-      if (f.url)        return '重新生成';
-      return isStart ? '生成首帧' : '+ 尾帧';
-  }
+  // Active states — phase takes full label
+  if (f.phase === 'waiting')     return f.wait > 0 ? `${f.wait}s` : '即将生成…';
+  if (f.phase === 'generating')  return '生成中…';
+  if (f.phase === 'downloading') return '下载中…';
+  if (f.phase === 'error')       return '生成失败，重试';
+
+  // Idle — show action label first, then cooldown suffix if applicable
+  const action = f.url ? '重新生成' : (isStart ? '生成首帧' : '+ 尾帧');
+  return cooldown > 0 ? `${action}（冷却中 ${cooldown}s）` : action;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
