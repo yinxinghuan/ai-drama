@@ -3,6 +3,21 @@ const IMAGE_API = import.meta.env.DEV
   ? '/api/image/genl_image'
   : 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
 
+const REHOST_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/rehost';
+
+/** Rehost a temporary CDN URL to R2 so the video server can access it stably. */
+async function rehostImage(tempUrl: string): Promise<string> {
+  if (import.meta.env.DEV) return tempUrl; // skip in dev
+  const res = await fetch(REHOST_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: tempUrl }),
+  });
+  const data = await res.json() as { url?: string; error?: string };
+  if (!data.url) throw new Error(data.error ?? 'rehost failed');
+  return data.url;
+}
+
 const COOLDOWN_MS = 20_000;
 
 // Serial queue for scheduling only — HTTP fetches run concurrently outside the queue.
@@ -107,7 +122,7 @@ export function generateSceneImage(
     })
     .then(data => {
       if (data.code !== 200 || !data.url) throw new Error('生图失败，请重试');
-      return data.url;
+      return rehostImage(data.url);
     })
   );
 }
