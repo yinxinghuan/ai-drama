@@ -95,8 +95,6 @@ export default function Drama() {
       saveWork(work);
       return prev;
     });
-
-    setPhase('theater');
   }, [character, generateShot]);
 
   const handleRegenShot = useCallback(async (shotId: string) => {
@@ -148,8 +146,18 @@ export default function Drama() {
           onBack={() => setPhase('setup')}
         />
       )}
-      {phase === 'generating' && (
-        <GeneratingPage shots={shots} totalCount={shots.filter(s => s.prompt.trim()).length} />
+      {phase === 'generating' && character && (
+        <GeneratingPage
+          shots={shots}
+          onRegen={handleRegenShot}
+          onPreview={() => setPhase('theater')}
+          onBack={() => {
+            setShots(prev => prev.map(s => ({
+              ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
+            })));
+            setPhase('script');
+          }}
+        />
       )}
       {phase === 'theater' && character && (
         <TheaterPage
