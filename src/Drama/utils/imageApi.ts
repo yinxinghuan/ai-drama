@@ -5,6 +5,26 @@ const IMAGE_API = import.meta.env.DEV
 
 const REHOST_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/rehost';
 const UPLOAD_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/upload';
+const ENHANCE_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/enhance';
+
+/**
+ * Use GLM to rewrite a Chinese scene description into an optimized image prompt.
+ * Falls back to the original text on any error.
+ */
+export async function enhancePrompt(prompt: string, imageUrl?: string): Promise<string> {
+  try {
+    const res = await fetch(ENHANCE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, imageUrl }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const data = await res.json() as { prompt?: string };
+    return data.prompt?.trim() || prompt;
+  } catch {
+    return prompt; // always fall back
+  }
+}
 
 export async function uploadImage(file: File): Promise<string> {
   const res = await fetch(UPLOAD_API, {

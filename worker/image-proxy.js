@@ -63,6 +63,39 @@ async function writeJsonToOSS(objKey, value, keyId, secret) {
   await uploadToOSS(data, objKey, 'application/json', keyId, secret);
 }
 
+async function enhancePromptGLM(userPrompt, imageUrl, apiKey) {
+  const contentParts = [
+    {
+      type: 'text',
+      text: `你是专业的AI视频生成提示词专家。将以下中文场景描述优化为适合AI图片生成的英文提示词。要求：电影感构图、丰富细节、光影氛围，直接输出英文提示词，不要任何解释或标题。\n\n场景：${userPrompt}`,
+    },
+  ];
+  if (imageUrl) {
+    contentParts.push({ type: 'image_url', image_url: { url: imageUrl } });
+  }
+
+  const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'glm-4.1v-thinking-flash',
+      stream: false,
+      do_sample: true,
+      temperature: 0.8,
+      top_p: 0.6,
+      messages: [{ role: 'user', content: contentParts }],
+    }),
+  });
+  if (!res.ok) throw new Error(`GLM API error: ${res.status}`);
+  const data = await res.json();
+  let result = data.choices?.[0]?.message?.content ?? '';
+  // Strip thinking tags if present
+  if (result.includes('<|begin_of_box|>')) {
+    result = result.split('<|begin_of_box|>').pop().split('<|end_of_box|>')[0];
+  }
+  return result.trim();
+}
+
 function worksKey(uid) {
   return `prod/drama/works/${uid}.json`;
 }
@@ -81,6 +114,20 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // ── /enhance: optimize user prompt via GLM ───────────────────────────────
+    if (url.pathname === '/enhance') {
+      try {
+        const { prompt, imageUrl } = await request.json();
+        if (!prompt) return jsonResp({ error: 'prompt required' }, 400);
+        const enhanced = await enhancePromptGLM(prompt, imageUrl || null, env.GLM_API_KEY);
+        return jsonResp({ prompt: enhanced || prompt });
+      } catch (e) {
+        // Always return something usable — fall back to original prompt
+        const body = await request.clone().json().catch(() => ({}));
+        return jsonResp({ prompt: body.prompt ?? '' });
+      }
+    }
 
     // ── /works: cloud draft storage ───────────────────────────────────────────
     if (url.pathname === '/works') {

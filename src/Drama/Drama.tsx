@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Character, Shot, Phase, Work } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
-import { generateSceneImage } from './utils/imageApi';
+import { generateSceneImage, enhancePrompt } from './utils/imageApi';
 import { generateVideo, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
 import { saveWork } from './utils/works';
 import SetupPage from './pages/SetupPage';
@@ -51,12 +51,15 @@ export default function Drama() {
   }, []);
 
   const generateShot = useCallback(async (shot: Shot, char: Character) => {
-    const prompt = buildPrompt(shot.prompt, char);
     try {
+      // Step 0: AI-enhance the user's Chinese scene description into a rich English prompt
+      updateShot(shot.id, { status: 'imaging' });
+      const enhanced = await enhancePrompt(shot.prompt, char.head_url || undefined);
+      const prompt = buildPrompt(enhanced, char);
+
       // Step 1: generate start frame if not pre-generated in script phase
       let startUrl = shot.startImageUrl;
       if (!startUrl) {
-        updateShot(shot.id, { status: 'imaging' });
         startUrl = await generateSceneImage(prompt, char.head_url);
         updateShot(shot.id, { startImageUrl: startUrl });
       }
