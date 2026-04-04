@@ -69,6 +69,7 @@ export default function Drama() {
       const videoUrl = await generateVideo(prompt, startUrl, shot.endImageUrl);
       updateShot(shot.id, { status: 'done', videoUrl });
     } catch (err) {
+      console.error('[generateShot] failed:', err);
       updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
     }
   }, [updateShot]);

@@ -48,6 +48,7 @@ export async function generateVideo(
 
   if (!res.ok) throw new Error(`视频生成请求失败: ${res.status}`);
   const data = await res.json() as { Flag: boolean; File: string | Record<string, string> };
+  console.log('[videoApi] response:', data);
   if (!data.Flag || !data.File) throw new Error('生成失败，请重试');
 
   // prompt_group mode returns File as {"888": "url"}, plain mode returns string
