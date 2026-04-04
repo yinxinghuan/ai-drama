@@ -256,7 +256,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                       }
                       <button
                         className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
-                        onPointerDown={() => generateFrame(shot.id, shot.prompt, type, { cancelled: false })}
+                        onPointerDown={() => { if (!busy && cooldown === 0) generateFrame(shot.id, shot.prompt, type, { cancelled: false }); }}
                         disabled={!hasPrompt || busy || cooldown > 0}
                       >
                         {btnContent(frame, isStart, cooldown)}
