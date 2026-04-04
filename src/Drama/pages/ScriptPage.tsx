@@ -70,7 +70,7 @@ function btnContent(f: FrameData, isStart: boolean, cooldown: number): React.Rea
 
   const action = f.url ? '重新生成' : (isStart ? '生成首帧' : '+ 尾帧');
   if (cooldown > 0) {
-    return <>{action} <span className="ad-shot__frame-btn-cd">{cooldown}s</span></>;
+    return <>{action} <span className="ad-shot__frame-btn-cd">冷却中 {cooldown}s</span></>;
   }
   return action;
 }
