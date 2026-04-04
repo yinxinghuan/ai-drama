@@ -34,14 +34,14 @@ const IDLE_SLOT: FrameSlot = { state: 'idle', wait: 0 };
 function frameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
-  if (cooldown > 0) return `${cooldown}s`;
+  if (cooldown > 0) return `冷却中 ${cooldown}s`;
   return hasImage ? '重新生成' : '生成首帧';
 }
 
 function endFrameLabel(slot: FrameSlot, hasImage: boolean, cooldown: number): string {
   if (slot.state === 'generating') return '生成中…';
   if (slot.state === 'waiting') return slot.wait > 0 ? `${slot.wait}s` : '即将生成…';
-  if (cooldown > 0) return `${cooldown}s`;
+  if (cooldown > 0) return `冷却中 ${cooldown}s`;
   return hasImage ? '重新生成' : '+ 尾帧';
 }
 
