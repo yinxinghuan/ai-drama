@@ -40,9 +40,15 @@ export default function TheaterPage({ shots, character, onRestart, onRegenShot }
   }, []);
 
   if (playable.length === 0) {
+    const errors = shots.filter(s => s.status === 'error');
     return (
       <div className="ad-theater ad-theater--empty">
         <p>所有镜头都生成失败了</p>
+        {errors.map((s, i) => (
+          <p key={s.id} style={{ fontSize: 11, color: '#f87171', margin: '4px 16px', wordBreak: 'break-all' }}>
+            镜头{i + 1}: {s.error}
+          </p>
+        ))}
         <button className="ad-theater__restart" onPointerDown={onRestart}>重新开始</button>
       </div>
     );
