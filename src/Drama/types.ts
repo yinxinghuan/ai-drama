@@ -19,4 +19,11 @@ export interface Shot {
   error?: string;
 }
 
-export type Phase = 'setup' | 'script' | 'generating' | 'theater';
+export type Phase = 'setup' | 'script' | 'generating' | 'theater' | 'works';
+
+export interface Work {
+  id: string;
+  createdAt: number;
+  character: Character;
+  shots: Shot[];
+}

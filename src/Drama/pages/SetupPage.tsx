@@ -6,6 +6,7 @@ import './SetupPage.less';
 interface Props {
   aigram: AigramState;
   onSelect: (character: Character) => void;
+  onOpenWorks: () => void;
 }
 
 function CharCard({ char, isMe, onSelect }: { char: Character; isMe: boolean; onSelect: () => void }) {
@@ -27,7 +28,7 @@ function CharCard({ char, isMe, onSelect }: { char: Character; isMe: boolean; on
   );
 }
 
-export default function SetupPage({ aigram, onSelect }: Props) {
+export default function SetupPage({ aigram, onSelect, onOpenWorks }: Props) {
   const { me, contacts, loading, isDemo } = aigram;
   const [username, setUsername] = useState('');
   const [searching, setSearching] = useState(false);
@@ -62,6 +63,7 @@ export default function SetupPage({ aigram, onSelect }: Props) {
         <img src="/ai-drama/img/aigram.svg" className="ad-setup__logo" alt="aigram" />
         <span className="ad-setup__title">AI 短剧导演</span>
         <span className="ad-setup__sub">选择主角</span>
+        <button className="ad-setup__works-btn" onPointerDown={onOpenWorks}>我的作品</button>
       </div>
 
       {loading ? (
