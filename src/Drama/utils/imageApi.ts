@@ -3,10 +3,10 @@ const IMAGE_API = import.meta.env.DEV
   ? '/api/image/genl_image'
   : 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
 
-const COOLDOWN_MS = 75_000;
+const COOLDOWN_MS = 20_000;
 
 // Serial queue for scheduling only — HTTP fetches run concurrently outside the queue.
-// First call always fires immediately; subsequent calls wait only if within 75s of the last send.
+// First call always fires immediately; subsequent calls wait only if within 20s of the last send.
 let lastSendTime = 0;
 let sendQueue: Promise<void> = Promise.resolve();
 
@@ -30,7 +30,7 @@ function broadcastCooldown() {
 }
 
 // After a request fires, keep broadcasting the countdown until it reaches 0.
-// Without this, the global cooldownLeft gets set to 75 and never decrements
+// Without this, the global cooldownLeft gets set to 20 and never decrements
 // because the queue's setInterval only runs while waiting for a slot.
 let broadcastTimer: ReturnType<typeof setInterval> | null = null;
 
