@@ -92,10 +92,10 @@ export default function Drama() {
       await generateShot(shot, character);
     }
 
-    // Auto-save to works
+    // Auto-save to works (cloud if logged in, localStorage if demo)
     setShots(prev => {
       const work: Work = { id: crypto.randomUUID(), createdAt: Date.now(), character, shots: prev };
-      saveWork(work);
+      saveWork(aigram.me?.telegram_id, work);
       return prev;
     });
   }, [character, generateShot]);
@@ -135,6 +135,7 @@ export default function Drama() {
       )}
       {phase === 'works' && (
         <WorksPage
+          uid={aigram.me?.telegram_id}
           onBack={() => setPhase('setup')}
           onPlay={handleLoadWork}
           onEdit={handleEditWork}
