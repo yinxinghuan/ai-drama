@@ -121,9 +121,12 @@ export default function TheaterPage({ shots, character, onBack, onRestart, onReg
             ))}
           </div>
           <div className="ad-theater__actions">
+            <button className="ad-theater__regen ad-theater__regen--current" onPointerDown={() => onRegenShot(shot.id)}>
+              重拍此镜头
+            </button>
             {failedShots.map(s => (
               <button key={s.id} className="ad-theater__regen" onPointerDown={() => onRegenShot(s.id)}>
-                重拍镜头 {shots.indexOf(s) + 1}
+                重拍镜头 {shots.indexOf(s) + 1}（失败）
               </button>
             ))}
             <button className="ad-theater__restart" onPointerDown={onRestart}>重新导演</button>

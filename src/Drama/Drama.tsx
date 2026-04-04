@@ -27,6 +27,7 @@ function buildPrompt(userPrompt: string, character: Character): string {
   if (character.style) parts.push(`${character.style} style`);
   parts.push('cinematic film');
   parts.push(userPrompt);
+  parts.push('forward motion, no loop, end on a different scene from the opening');
   return parts.join(', ');
 }
 
