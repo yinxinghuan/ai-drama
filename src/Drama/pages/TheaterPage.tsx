@@ -5,11 +5,12 @@ import './TheaterPage.less';
 interface Props {
   shots: Shot[];
   character: Character;
+  onBack: () => void;
   onRestart: () => void;
   onRegenShot: (shotId: string) => void;
 }
 
-export default function TheaterPage({ shots, character, onRestart, onRegenShot }: Props) {
+export default function TheaterPage({ shots, character, onBack, onRestart, onRegenShot }: Props) {
   const playable = shots.filter(s => s.status === 'done' && s.videoUrl);
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
@@ -83,6 +84,7 @@ export default function TheaterPage({ shots, character, onRestart, onRegenShot }
       <div className={`ad-theater__overlay${showControls ? ' ad-theater__overlay--show' : ''}`}>
         {/* Top */}
         <div className="ad-theater__top">
+          <button className="ad-theater__back" onPointerDown={onBack}>←</button>
           <div className="ad-theater__char">
             <div className="ad-theater__avatar">
               {character.head_url
