@@ -66,9 +66,11 @@ function btnContent(f: FrameData, isStart: boolean, cooldown: number): React.Rea
   if (f.phase === 'waiting')     return f.wait > 0 ? `${f.wait}s` : '即将生成…';
   if (f.phase === 'generating')  return '生成中…';
   if (f.phase === 'downloading') return '下载中…';
-  if (f.phase === 'error')       return '生成失败，重试';
 
-  const action = f.url ? '重新生成' : (isStart ? '生成首帧' : '+ 尾帧');
+  const action = f.phase === 'error'
+    ? '生成失败，重试'
+    : (f.url ? '重新生成' : (isStart ? '生成首帧' : '+ 尾帧'));
+
   if (cooldown > 0) {
     return <>{action} <span className="ad-shot__frame-btn-cd">{cooldown}s 冷却中</span></>;
   }
@@ -253,7 +255,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                           </div>
                       }
                       <button
-                        className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || (frame.phase === 'idle' && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
+                        className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
                         onPointerDown={() => generateFrame(shot.id, shot.prompt, type, { cancelled: false })}
                         disabled={!hasPrompt || busy || cooldown > 0}
                       >
