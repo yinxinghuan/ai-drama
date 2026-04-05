@@ -4,6 +4,34 @@
 @text: #e8e8f0;
 @text-dim: #9090b0;
 
+.ad-setup__gen-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(167,139,250,0.12);
+  border-bottom: 1px solid rgba(167,139,250,0.2);
+  color: @accent;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.ad-setup__gen-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(167,139,250,0.3);
+  border-top-color: @accent;
+  border-radius: 50%;
+  animation: ad-setup-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ad-setup-spin {
+  to { transform: rotate(360deg); }
+}
+
 .ad-setup {
   display: flex;
   flex-direction: column;

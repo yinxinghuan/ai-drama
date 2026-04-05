@@ -7,6 +7,8 @@ interface Props {
   aigram: AigramState;
   onSelect: (character: Character) => void;
   onOpenWorks: () => void;
+  isGenerating?: boolean;
+  onResumeGenerating?: () => void;
 }
 
 function CharCard({ char, isMe, onSelect }: { char: Character; isMe: boolean; onSelect: () => void }) {
@@ -28,7 +30,7 @@ function CharCard({ char, isMe, onSelect }: { char: Character; isMe: boolean; on
   );
 }
 
-export default function SetupPage({ aigram, onSelect, onOpenWorks }: Props) {
+export default function SetupPage({ aigram, onSelect, onOpenWorks, isGenerating, onResumeGenerating }: Props) {
   const { me, contacts, loading, isDemo } = aigram;
   const [username, setUsername] = useState('');
   const [searching, setSearching] = useState(false);
@@ -59,6 +61,12 @@ export default function SetupPage({ aigram, onSelect, onOpenWorks }: Props) {
 
   return (
     <div className="ad-setup">
+      {isGenerating && (
+        <div className="ad-setup__gen-banner" onPointerDown={onResumeGenerating}>
+          <span className="ad-setup__gen-spinner" />
+          <span>拍摄进行中… 点击查看进度</span>
+        </div>
+      )}
       <div className="ad-setup__header">
         <img src="/ai-drama/img/aigram.svg" className="ad-setup__logo" alt="aigram" />
         <span className="ad-setup__title">AI 短剧导演</span>
