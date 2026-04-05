@@ -38,13 +38,18 @@ export default function GeneratingPage({ shots, onRegen, onPreview, onBack }: Pr
   return (
     <div className="ad-gen">
       <div className="ad-gen__header">
-        <button className="ad-gen__back" onPointerDown={onBack}>←</button>
+        <button className="ad-gen__back" onPointerDown={onBack}>← 回主页（不中断）</button>
       </div>
 
       <div className="ad-gen__top">
         <div className="ad-gen__icon">🎬</div>
-        <h2 className="ad-gen__title">{allSettled ? '拍摄完成' : '正在拍摄…'}</h2>
-        {!allSettled && <p className="ad-gen__sub">约需 2-3 分钟，请勿关闭</p>}
+        <h2 className="ad-gen__title">{allSettled ? '拍摄完成！' : '正在拍摄…'}</h2>
+        {!allSettled && (
+          <>
+            <p className="ad-gen__sub">每个镜头约需 2-3 分钟</p>
+            <p className="ad-gen__tip">可以先回主页做别的，完成后在作品列表查看<br />⚠️ 关闭小程序会中断生成</p>
+          </>
+        )}
       </div>
 
       {/* Progress bar */}
