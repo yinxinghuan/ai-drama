@@ -64,11 +64,13 @@
 
 .ad-works__list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+
+  .ad-work-card + .ad-work-card {
+    margin-top: 14px;
+  }
 }
 
 .ad-work-card {
