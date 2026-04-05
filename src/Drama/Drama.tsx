@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { Character, Shot, Phase, Work } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage, enhancePrompt } from './utils/imageApi';
@@ -38,10 +38,13 @@ export default function Drama() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [shots, setShots] = useState<Shot[]>(INITIAL_SHOTS);
 
+  // Stable work ID for the current generation session, used for incremental saves
+  const currentWorkId = useRef<string | null>(null);
+  const currentCharacter = useRef<Character | null>(null);
+
   const goTheater = (from: Phase) => { setPrevPhase(from); setPhase('theater'); };
 
   const handleSelectCharacter = useCallback(async (char: Character) => {
-    // Enrich via public API (by name, no token needed) — gets head_url, avatar_describe, style
     const enriched = await enrichCharacter(char);
     setCharacter(enriched);
     setPhase('script');
@@ -51,28 +54,32 @@ export default function Drama() {
     setShots(prev => prev.map(s => s.id === id ? { ...s, ...update } : s));
   }, []);
 
+  // Save current shots to works — called after each shot completes
+  const saveCurrentWork = useCallback((shots: Shot[]) => {
+    const workId = currentWorkId.current;
+    const char = currentCharacter.current;
+    if (!workId || !char) return;
+    const work: Work = { id: workId, createdAt: Date.now(), character: char, shots };
+    saveWork(aigram.me?.telegram_id, work);
+  }, [aigram.me?.telegram_id]);
+
   const generateShot = useCallback(async (shot: Shot, char: Character) => {
     try {
-      // Step 0: AI-enhance the user's Chinese scene description into a rich English prompt
       updateShot(shot.id, { status: 'imaging' });
       const enhanced = await enhancePrompt(shot.prompt, char.head_url || undefined);
       const prompt = buildPrompt(enhanced, char);
 
-      // Step 1: generate start frame if not pre-generated in script phase
       let startUrl = shot.startImageUrl;
       if (!startUrl) {
         startUrl = await generateSceneImage(prompt, char.head_url);
         updateShot(shot.id, { startImageUrl: startUrl });
       }
 
-      // Step 2: wait for video cooldown (100s between calls)
       updateShot(shot.id, { status: 'waiting' });
       await waitForVideoCooldown(remaining => {
         updateShot(shot.id, { waitSeconds: remaining });
       });
 
-      // Step 3: generate video
-      // With endImageUrl: explicit start→end mode; without: prompt_group A→B→A auto mode
       markVideoCallStart();
       updateShot(shot.id, { status: 'generating' });
       const videoUrl = await generateVideo(prompt, startUrl, shot.endImageUrl);
@@ -86,30 +93,42 @@ export default function Drama() {
     if (!character) return;
     const activeShots = enrichedShots.filter(s => s.prompt.trim());
 
-    setShots(enrichedShots.map(s => ({
-      ...s, status: 'idle', videoUrl: undefined, error: undefined, waitSeconds: undefined,
-    })));
+    // Stable IDs for this generation session
+    const workId = crypto.randomUUID();
+    currentWorkId.current = workId;
+    currentCharacter.current = character;
+
+    const pendingShots = enrichedShots.map(s => ({
+      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
+    }));
+    setShots(pendingShots);
     setPhase('generating');
 
-    // Sequential: one shot at a time to respect API rate limits
+    // Save draft immediately so it appears in works list right away
+    saveWork(aigram.me?.telegram_id, { id: workId, createdAt: Date.now(), character, shots: pendingShots });
+
+    // Sequential generation — save after each shot completes
     for (const shot of activeShots) {
       await generateShot(shot, character);
+      // Incremental save: capture current shots state and persist
+      setShots(prev => {
+        saveCurrentWork(prev);
+        return prev;
+      });
     }
-
-    // Auto-save to works (cloud if logged in, localStorage if demo)
-    setShots(prev => {
-      const work: Work = { id: crypto.randomUUID(), createdAt: Date.now(), character, shots: prev };
-      saveWork(aigram.me?.telegram_id, work);
-      return prev;
-    });
-  }, [character, generateShot]);
+  }, [character, generateShot, saveCurrentWork, aigram.me?.telegram_id]);
 
   const handleRegenShot = useCallback(async (shotId: string) => {
     if (!character) return;
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
     await generateShot(shot, character);
-  }, [character, shots, generateShot]);
+    // Save after regen too
+    setShots(prev => {
+      saveCurrentWork(prev);
+      return prev;
+    });
+  }, [character, shots, generateShot, saveCurrentWork]);
 
   const handleRestart = () => {
     setShots(prev => prev.map(s => ({
@@ -132,10 +151,18 @@ export default function Drama() {
     setPhase('script');
   }, []);
 
+  const isGenerating = shots.some(s => ['imaging', 'waiting', 'generating'].includes(s.status));
+
   return (
     <div className="ad-root">
       {phase === 'setup' && (
-        <SetupPage aigram={aigram} onSelect={handleSelectCharacter} onOpenWorks={() => setPhase('works')} />
+        <SetupPage
+          aigram={aigram}
+          onSelect={handleSelectCharacter}
+          onOpenWorks={() => setPhase('works')}
+          isGenerating={isGenerating}
+          onResumeGenerating={() => setPhase('generating')}
+        />
       )}
       {phase === 'works' && (
         <WorksPage
@@ -159,12 +186,7 @@ export default function Drama() {
           shots={shots}
           onRegen={handleRegenShot}
           onPreview={() => goTheater('works')}
-          onBack={() => {
-            setShots(prev => prev.map(s => ({
-              ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
-            })));
-            setPhase('script');
-          }}
+          onBack={() => setPhase('setup')}
         />
       )}
       {phase === 'theater' && character && (
