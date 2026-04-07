@@ -104,8 +104,8 @@ export default function Drama() {
   }, [updateShot, saveCurrentWork]);
 
   /**
-   * Submit all shots to server queue first, then poll in parallel.
-   * This ensures all taskIds are saved even if user closes the app mid-way.
+   * Sequential generation: submit → poll → next shot.
+   * Server doesn't support concurrent video tasks.
    */
   const handleGenerate = useCallback(async (enrichedShots: Shot[]) => {
     if (!character) return;
@@ -124,22 +124,16 @@ export default function Drama() {
 
     saveWork(aigram.me?.telegram_id, { id: workId, createdAt: Date.now(), character, shots: pendingShots });
 
-    // Phase 1: Submit all shots sequentially (respecting cooldowns)
-    const submitted: { shotId: string; taskId: string }[] = [];
+    // One at a time: submit → poll until done → next
     for (const shot of activeShots) {
       try {
         const taskId = await submitShotJob(shot, character);
-        submitted.push({ shotId: shot.id, taskId });
+        await pollShot(shot.id, taskId);
       } catch (err) {
         updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+        setShots(prev => { saveCurrentWork(prev); return prev; });
       }
-      setShots(prev => { saveCurrentWork(prev); return prev; });
     }
-
-    // Phase 2: Poll all submitted shots in parallel
-    await Promise.allSettled(
-      submitted.map(({ shotId, taskId }) => pollShot(shotId, taskId))
-    );
   }, [character, submitShotJob, pollShot, updateShot, saveCurrentWork, aigram.me?.telegram_id]);
 
   const handleRegenShot = useCallback(async (shotId: string) => {
@@ -188,34 +182,27 @@ export default function Drama() {
     setGenBackPhase('works');
     setPhase('generating');
 
-    // Resume polling for all shots that have a taskId but no videoUrl — in parallel
+    // Resume polling for shots that have a taskId but no videoUrl — one at a time
     const pending = normalized.filter(s => s.taskId && !s.videoUrl);
-    await Promise.allSettled(
-      pending.map(shot => pollShot(shot.id, shot.taskId!))
-    );
+    for (const shot of pending) {
+      await pollShot(shot.id, shot.taskId!);
+    }
   }, [pollShot]);
 
-  // Continue generating remaining idle/error shots — same submit-all-then-poll pattern
+  // Continue generating remaining idle/error shots — sequential
   const handleContinueGeneration = useCallback(async () => {
     if (!character) return;
     const remaining = shots.filter(s => s.prompt.trim() && (s.status === 'idle' || s.status === 'error'));
 
-    // Phase 1: Submit all remaining
-    const submitted: { shotId: string; taskId: string }[] = [];
     for (const shot of remaining) {
       try {
         const taskId = await submitShotJob(shot, character);
-        submitted.push({ shotId: shot.id, taskId });
+        await pollShot(shot.id, taskId);
       } catch (err) {
         updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+        setShots(prev => { saveCurrentWork(prev); return prev; });
       }
-      setShots(prev => { saveCurrentWork(prev); return prev; });
     }
-
-    // Phase 2: Poll all in parallel
-    await Promise.allSettled(
-      submitted.map(({ shotId, taskId }) => pollShot(shotId, taskId))
-    );
   }, [character, shots, submitShotJob, pollShot, updateShot, saveCurrentWork]);
 
   const isGenerating = shots.some(s => ['imaging', 'waiting', 'generating'].includes(s.status));
