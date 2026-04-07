@@ -150,14 +150,23 @@ export default function Drama() {
     setCharacter(work.character);
     currentWorkId.current = work.id;
     currentCharacter.current = work.character;
-    setShots(work.shots);
+
+    // Normalize statuses based on actual data — saved status may be stale
+    const normalized = work.shots.map(s => ({
+      ...s,
+      status: s.videoUrl ? 'done' as const
+        : s.taskId ? 'generating' as const
+        : 'idle' as const,
+      error: undefined,
+      waitSeconds: undefined,
+    }));
+    setShots(normalized);
     setGenBackPhase('works');
     setPhase('generating');
 
     // Resume polling for shots that have a taskId but no videoUrl yet
-    const pending = work.shots.filter(s => s.taskId && !s.videoUrl);
+    const pending = normalized.filter(s => s.taskId && !s.videoUrl);
     for (const shot of pending) {
-      updateShot(shot.id, { status: 'generating' });
       try {
         const videoUrl = await pollVideoTask(shot.taskId!);
         updateShot(shot.id, { status: 'done', videoUrl });
@@ -167,6 +176,16 @@ export default function Drama() {
       setShots(prev => { saveCurrentWork(prev); return prev; });
     }
   }, [updateShot, saveCurrentWork]);
+
+  // Continue generating remaining idle/error shots
+  const handleContinueGeneration = useCallback(async () => {
+    if (!character) return;
+    const remaining = shots.filter(s => s.prompt.trim() && (s.status === 'idle' || s.status === 'error'));
+    for (const shot of remaining) {
+      await generateShot(shot, character);
+      setShots(prev => { saveCurrentWork(prev); return prev; });
+    }
+  }, [character, shots, generateShot, saveCurrentWork]);
 
   const isGenerating = shots.some(s => ['imaging', 'waiting', 'generating'].includes(s.status));
 
@@ -201,6 +220,7 @@ export default function Drama() {
         <GeneratingPage
           shots={shots}
           onRegen={handleRegenShot}
+          onContinue={handleContinueGeneration}
           onPreview={() => goTheater('generating')}
           onBack={() => setPhase(genBackPhase)}
         />
