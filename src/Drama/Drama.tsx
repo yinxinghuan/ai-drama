@@ -147,6 +147,13 @@ export default function Drama() {
   };
 
   const handleResumeWork = useCallback(async (work: Work) => {
+    // If this is the currently active work, just navigate back — don't reload and overwrite in-memory state
+    if (work.id === currentWorkId.current) {
+      setGenBackPhase('works');
+      setPhase('generating');
+      return;
+    }
+
     setCharacter(work.character);
     currentWorkId.current = work.id;
     currentCharacter.current = work.character;
@@ -197,7 +204,7 @@ export default function Drama() {
           onSelect={handleSelectCharacter}
           onOpenWorks={() => setPhase('works')}
           isGenerating={isGenerating}
-          onResumeGenerating={() => setPhase('generating')}
+          onResumeGenerating={() => { setGenBackPhase('setup'); setPhase('generating'); }}
         />
       )}
       {phase === 'works' && (
