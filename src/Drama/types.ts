@@ -15,6 +15,7 @@ export interface Shot {
   startImageUrl?: string; // pre-generated start frame
   endImageUrl?: string;   // optional pre-generated end frame
   waitSeconds?: number;   // cooldown countdown before video generation
+  taskId?: string;        // async video job ID — persisted so polling can resume after app close
   videoUrl?: string;
   error?: string;
 }
