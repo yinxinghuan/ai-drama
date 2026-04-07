@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import type { Character, Shot, Phase, Work } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage, enhancePrompt } from './utils/imageApi';
-import { generateVideo, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
+import { submitVideo, pollVideoTask, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
 import { saveWork } from './utils/works';
 import SetupPage from './pages/SetupPage';
 import ScriptPage from './pages/ScriptPage';
@@ -82,7 +82,14 @@ export default function Drama() {
 
       markVideoCallStart();
       updateShot(shot.id, { status: 'generating' });
-      const videoUrl = await generateVideo(prompt, startUrl, shot.endImageUrl);
+
+      // Submit job — save taskId immediately so it persists if app is closed
+      const taskId = await submitVideo(prompt, startUrl, shot.endImageUrl);
+      updateShot(shot.id, { taskId });
+      setShots(prev => { saveCurrentWork(prev); return prev; });
+
+      // Poll until done
+      const videoUrl = await pollVideoTask(taskId);
       updateShot(shot.id, { status: 'done', videoUrl });
     } catch (err) {
       updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
@@ -151,6 +158,27 @@ export default function Drama() {
     setPhase('script');
   }, []);
 
+  const handleResumeWork = useCallback(async (work: Work) => {
+    setCharacter(work.character);
+    currentWorkId.current = work.id;
+    currentCharacter.current = work.character;
+    setShots(work.shots);
+    setPhase('generating');
+
+    // Resume polling for shots that have a taskId but no videoUrl yet
+    const pending = work.shots.filter(s => s.taskId && !s.videoUrl);
+    for (const shot of pending) {
+      updateShot(shot.id, { status: 'generating' });
+      try {
+        const videoUrl = await pollVideoTask(shot.taskId!);
+        updateShot(shot.id, { status: 'done', videoUrl });
+      } catch (err) {
+        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
+      }
+      setShots(prev => { saveCurrentWork(prev); return prev; });
+    }
+  }, [updateShot, saveCurrentWork]);
+
   const isGenerating = shots.some(s => ['imaging', 'waiting', 'generating'].includes(s.status));
 
   return (
@@ -170,6 +198,7 @@ export default function Drama() {
           onBack={() => setPhase('setup')}
           onPlay={handleLoadWork}
           onEdit={handleEditWork}
+          onResume={handleResumeWork}
         />
       )}
       {phase === 'script' && character && (

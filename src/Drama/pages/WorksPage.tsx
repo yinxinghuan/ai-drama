@@ -8,6 +8,7 @@ interface Props {
   onBack: () => void;
   onPlay: (work: Work) => void;
   onEdit: (work: Work) => void;
+  onResume: (work: Work) => void;
 }
 
 function formatDate(ts: number): string {
@@ -15,7 +16,7 @@ function formatDate(ts: number): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export default function WorksPage({ uid, onBack, onPlay, onEdit }: Props) {
+export default function WorksPage({ uid, onBack, onPlay, onEdit, onResume }: Props) {
   const [works, setWorks] = useState<Work[]>(() => loadWorksLocal());
   const [loading, setLoading] = useState(!!uid);
   const [copyHint, setCopyHint] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export default function WorksPage({ uid, onBack, onPlay, onEdit }: Props) {
         <div className="ad-works__list">
           {works.map(work => {
             const videoCount = work.shots.filter(s => s.videoUrl).length;
+            const pendingCount = work.shots.filter(s => s.taskId && !s.videoUrl).length;
             const firstShot = work.shots.find(s => s.videoUrl);
             const firstVideo = firstShot?.videoUrl;
             const thumbPoster = firstShot?.startImageUrl;
@@ -91,9 +93,18 @@ export default function WorksPage({ uid, onBack, onPlay, onEdit }: Props) {
                     </div>
                     <span className="ad-work-card__name">{work.character.name}</span>
                   </div>
-                  <span className="ad-work-card__meta">{videoCount} 个镜头 · {formatDate(work.createdAt)}</span>
+                  <span className="ad-work-card__meta">
+                    {videoCount} 个镜头完成
+                    {pendingCount > 0 && <span className="ad-work-card__pending"> · {pendingCount} 个生成中</span>}
+                    {' · '}{formatDate(work.createdAt)}
+                  </span>
 
                   <div className="ad-work-card__actions">
+                    {pendingCount > 0 && (
+                      <button className="ad-work-card__btn ad-work-card__btn--resume" onPointerDown={() => onResume(work)}>
+                        恢复生成
+                      </button>
+                    )}
                     <button className="ad-work-card__btn" onPointerDown={() => onEdit(work)}>重新编辑</button>
                     <button
                       className="ad-work-card__btn ad-work-card__btn--share"

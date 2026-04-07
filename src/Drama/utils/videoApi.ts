@@ -28,11 +28,10 @@ export function markVideoCallStart() {
 }
 
 /**
- * Submit video generation job and poll until complete.
- * - With endImageUrl: explicit start→end frame mode
- * - Without endImageUrl: prompt_group A→B→A auto mode
+ * Submit a video generation job — returns task_id immediately.
+ * Call pollVideoTask(taskId) separately to wait for the result.
  */
-export async function generateVideo(
+export async function submitVideo(
   prompt: string,
   startImageUrl: string,
   endImageUrl?: string,
@@ -43,21 +42,27 @@ export async function generateVideo(
     ? { prompt, env: 'test', id, image_url: startImageUrl, end_image_url: endImageUrl, oss_url: '' }
     : { prompt_group: { '888': prompt }, env: 'test', id, image_url: startImageUrl, end_image_url: '', oss_url: '' };
 
-  // Step 1: Submit job — returns immediately with task_id
-  const submitRes = await fetch(VIDEO_API, {
+  const res = await fetch(VIDEO_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query: '', params }),
     signal: AbortSignal.timeout(30_000),
   });
 
-  if (!submitRes.ok) throw new Error(`视频提交失败: ${submitRes.status}`);
+  if (!res.ok) throw new Error(`视频提交失败: ${res.status}`);
+  const data = await res.json() as { task_id?: string; Flag?: boolean; Log?: string };
+  if (!data.task_id) throw new Error(data.Log ?? '未获取到 task_id');
+  return data.task_id;
+}
 
-  const submitData = await submitRes.json() as { task_id?: string; Flag?: boolean; Log?: string };
-  if (!submitData.task_id) throw new Error(submitData.Log ?? '未获取到 task_id');
-
-  // Step 2: Poll until done
-  return pollVideoTask(submitData.task_id);
+/** Submit and poll — convenience wrapper */
+export async function generateVideo(
+  prompt: string,
+  startImageUrl: string,
+  endImageUrl?: string,
+): Promise<string> {
+  const taskId = await submitVideo(prompt, startImageUrl, endImageUrl);
+  return pollVideoTask(taskId);
 }
 
 export async function pollVideoTask(taskId: string): Promise<string> {
