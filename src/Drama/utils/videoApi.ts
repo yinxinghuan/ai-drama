@@ -38,9 +38,9 @@ export async function submitVideo(
 ): Promise<string> {
   const id = 'drama_' + Math.random().toString(36).slice(2, 10);
 
-  const params = endImageUrl
-    ? { prompt, env: 'test', id, image_url: startImageUrl, end_image_url: endImageUrl, oss_url: '' }
-    : { prompt_group: { '888': prompt }, env: 'test', id, image_url: startImageUrl, end_image_url: '', oss_url: '' };
+  const params: Record<string, unknown> = { prompt, env: 'test', id };
+  if (startImageUrl) params.image_url = startImageUrl;
+  if (endImageUrl) params.end_image_url = endImageUrl;
 
   const res = await fetch(VIDEO_API, {
     method: 'POST',
@@ -71,7 +71,7 @@ export async function pollVideoTask(taskId: string): Promise<string> {
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
-    let data: { Flag?: boolean; File?: string | Record<string, string>; status?: string; Log?: string };
+    let data: { Flag?: boolean; File?: string; status?: string; Log?: string };
     try {
       const res = await fetch(TASK_API, {
         method: 'POST',
@@ -85,9 +85,8 @@ export async function pollVideoTask(taskId: string): Promise<string> {
       continue; // network hiccup, retry
     }
 
-    if (data.Flag && data.File) {
-      const fileUrl = typeof data.File === 'string' ? data.File : data.File['888'];
-      if (fileUrl) return fileUrl;
+    if (data.Flag && data.File && typeof data.File === 'string') {
+      return data.File;
     }
 
     if (data.status === 'failed') throw new Error(data.Log ?? '视频生成失败');
