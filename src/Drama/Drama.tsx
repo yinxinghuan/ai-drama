@@ -56,98 +56,115 @@ export default function Drama() {
   }, []);
 
   // Save current shots to works — called after each shot completes
-  const saveCurrentWork = useCallback((shots: Shot[]) => {
+  const saveCurrentWork = useCallback((shotsSnapshot: Shot[]) => {
     const workId = currentWorkId.current;
     const char = currentCharacter.current;
     if (!workId || !char) return;
-    const work: Work = { id: workId, createdAt: Date.now(), character: char, shots };
+    const work: Work = { id: workId, createdAt: Date.now(), character: char, shots: shotsSnapshot };
     saveWork(aigram.me?.telegram_id, work);
   }, [aigram.me?.telegram_id]);
 
-  const generateShot = useCallback(async (shot: Shot, char: Character) => {
-    try {
-      updateShot(shot.id, { status: 'imaging' });
-      const enhanced = await enhancePrompt(shot.prompt, char.head_url || undefined);
-      const prompt = buildPrompt(enhanced, char);
+  /**
+   * Submit a single shot to the server — generates image + submits video job.
+   * Returns taskId. Does NOT poll — caller handles polling separately.
+   */
+  const submitShotJob = useCallback(async (shot: Shot, char: Character): Promise<string> => {
+    updateShot(shot.id, { status: 'imaging', error: undefined, taskId: undefined });
+    const enhanced = await enhancePrompt(shot.prompt, char.head_url || undefined);
+    const prompt = buildPrompt(enhanced, char);
 
-      let startUrl = shot.startImageUrl;
-      if (!startUrl) {
-        startUrl = await generateSceneImage(prompt, char.head_url);
-        updateShot(shot.id, { startImageUrl: startUrl });
-      }
-
-      updateShot(shot.id, { status: 'waiting' });
-      await waitForVideoCooldown(remaining => {
-        updateShot(shot.id, { waitSeconds: remaining });
-      });
-
-      markVideoCallStart();
-      updateShot(shot.id, { status: 'generating' });
-
-      // Submit job — save taskId immediately so it persists if app is closed
-      const taskId = await submitVideo(prompt, startUrl, shot.endImageUrl);
-      updateShot(shot.id, { taskId });
-      setShots(prev => { saveCurrentWork(prev); return prev; });
-
-      // Poll until done
-      const videoUrl = await pollVideoTask(taskId);
-      updateShot(shot.id, { status: 'done', videoUrl });
-    } catch (err) {
-      updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
+    let startUrl = shot.startImageUrl;
+    if (!startUrl) {
+      startUrl = await generateSceneImage(prompt, char.head_url);
+      updateShot(shot.id, { startImageUrl: startUrl });
     }
+
+    updateShot(shot.id, { status: 'waiting' });
+    await waitForVideoCooldown(remaining => {
+      updateShot(shot.id, { waitSeconds: remaining });
+    });
+
+    markVideoCallStart();
+    updateShot(shot.id, { status: 'generating' });
+
+    const taskId = await submitVideo(prompt, startUrl, shot.endImageUrl);
+    updateShot(shot.id, { taskId });
+    return taskId;
   }, [updateShot]);
 
+  /** Poll a single shot and update its status */
+  const pollShot = useCallback(async (shotId: string, taskId: string) => {
+    try {
+      const videoUrl = await pollVideoTask(taskId);
+      updateShot(shotId, { status: 'done', videoUrl });
+    } catch (err) {
+      updateShot(shotId, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
+    }
+    setShots(prev => { saveCurrentWork(prev); return prev; });
+  }, [updateShot, saveCurrentWork]);
+
+  /**
+   * Submit all shots to server queue first, then poll in parallel.
+   * This ensures all taskIds are saved even if user closes the app mid-way.
+   */
   const handleGenerate = useCallback(async (enrichedShots: Shot[]) => {
     if (!character) return;
     const activeShots = enrichedShots.filter(s => s.prompt.trim());
 
-    // Stable IDs for this generation session
     const workId = crypto.randomUUID();
     currentWorkId.current = workId;
     currentCharacter.current = character;
 
     const pendingShots = enrichedShots.map(s => ({
-      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
+      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined, taskId: undefined,
     }));
     setShots(pendingShots);
     setGenBackPhase('script');
     setPhase('generating');
 
-    // Save draft immediately so it appears in works list right away
     saveWork(aigram.me?.telegram_id, { id: workId, createdAt: Date.now(), character, shots: pendingShots });
 
-    // Sequential generation — save after each shot completes
+    // Phase 1: Submit all shots sequentially (respecting cooldowns)
+    const submitted: { shotId: string; taskId: string }[] = [];
     for (const shot of activeShots) {
-      await generateShot(shot, character);
-      // Incremental save: capture current shots state and persist
-      setShots(prev => {
-        saveCurrentWork(prev);
-        return prev;
-      });
+      try {
+        const taskId = await submitShotJob(shot, character);
+        submitted.push({ shotId: shot.id, taskId });
+      } catch (err) {
+        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+      }
+      setShots(prev => { saveCurrentWork(prev); return prev; });
     }
-  }, [character, generateShot, saveCurrentWork, aigram.me?.telegram_id]);
+
+    // Phase 2: Poll all submitted shots in parallel
+    await Promise.allSettled(
+      submitted.map(({ shotId, taskId }) => pollShot(shotId, taskId))
+    );
+  }, [character, submitShotJob, pollShot, updateShot, saveCurrentWork, aigram.me?.telegram_id]);
 
   const handleRegenShot = useCallback(async (shotId: string) => {
     if (!character) return;
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
-    await generateShot(shot, character);
-    // Save after regen too
-    setShots(prev => {
-      saveCurrentWork(prev);
-      return prev;
-    });
-  }, [character, shots, generateShot, saveCurrentWork]);
+    try {
+      const taskId = await submitShotJob(shot, character);
+      setShots(prev => { saveCurrentWork(prev); return prev; });
+      await pollShot(shotId, taskId);
+    } catch (err) {
+      updateShot(shotId, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+      setShots(prev => { saveCurrentWork(prev); return prev; });
+    }
+  }, [character, shots, submitShotJob, pollShot, updateShot, saveCurrentWork]);
 
   const handleRestart = () => {
     setShots(prev => prev.map(s => ({
-      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
+      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined, taskId: undefined,
     })));
     setPhase('script');
   };
 
   const handleResumeWork = useCallback(async (work: Work) => {
-    // If this is the currently active work, just navigate back — don't reload and overwrite in-memory state
+    // If this is the currently active work, just navigate back — don't reload
     if (work.id === currentWorkId.current) {
       setGenBackPhase('works');
       setPhase('generating');
@@ -158,7 +175,7 @@ export default function Drama() {
     currentWorkId.current = work.id;
     currentCharacter.current = work.character;
 
-    // Normalize statuses based on actual data — saved status may be stale
+    // Normalize statuses based on actual data
     const normalized = work.shots.map(s => ({
       ...s,
       status: s.videoUrl ? 'done' as const
@@ -171,28 +188,35 @@ export default function Drama() {
     setGenBackPhase('works');
     setPhase('generating');
 
-    // Resume polling for shots that have a taskId but no videoUrl yet
+    // Resume polling for all shots that have a taskId but no videoUrl — in parallel
     const pending = normalized.filter(s => s.taskId && !s.videoUrl);
-    for (const shot of pending) {
-      try {
-        const videoUrl = await pollVideoTask(shot.taskId!);
-        updateShot(shot.id, { status: 'done', videoUrl });
-      } catch (err) {
-        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
-      }
-      setShots(prev => { saveCurrentWork(prev); return prev; });
-    }
-  }, [updateShot, saveCurrentWork]);
+    await Promise.allSettled(
+      pending.map(shot => pollShot(shot.id, shot.taskId!))
+    );
+  }, [pollShot]);
 
-  // Continue generating remaining idle/error shots
+  // Continue generating remaining idle/error shots — same submit-all-then-poll pattern
   const handleContinueGeneration = useCallback(async () => {
     if (!character) return;
     const remaining = shots.filter(s => s.prompt.trim() && (s.status === 'idle' || s.status === 'error'));
+
+    // Phase 1: Submit all remaining
+    const submitted: { shotId: string; taskId: string }[] = [];
     for (const shot of remaining) {
-      await generateShot(shot, character);
+      try {
+        const taskId = await submitShotJob(shot, character);
+        submitted.push({ shotId: shot.id, taskId });
+      } catch (err) {
+        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+      }
       setShots(prev => { saveCurrentWork(prev); return prev; });
     }
-  }, [character, shots, generateShot, saveCurrentWork]);
+
+    // Phase 2: Poll all in parallel
+    await Promise.allSettled(
+      submitted.map(({ shotId, taskId }) => pollShot(shotId, taskId))
+    );
+  }, [character, shots, submitShotJob, pollShot, updateShot, saveCurrentWork]);
 
   const isGenerating = shots.some(s => ['imaging', 'waiting', 'generating'].includes(s.status));
 
