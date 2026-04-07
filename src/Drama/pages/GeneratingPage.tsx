@@ -38,7 +38,7 @@ export default function GeneratingPage({ shots, onRegen, onPreview, onBack }: Pr
   return (
     <div className="ad-gen">
       <div className="ad-gen__header">
-        <button className="ad-gen__back" onPointerDown={onBack}>← 回主页（不中断）</button>
+        <button className="ad-gen__back" onPointerDown={onBack}>← 返回</button>
       </div>
 
       <div className="ad-gen__top">
@@ -86,8 +86,8 @@ export default function GeneratingPage({ shots, onRegen, onPreview, onBack }: Pr
         ))}
       </div>
 
-      {/* Footer */}
-      {allSettled && successShots.length > 0 && (
+      {/* Footer — show preview whenever there are completed shots */}
+      {successShots.length > 0 && (
         <div className="ad-gen__footer">
           <button
             className={`ad-gen__preview-btn${allPreloaded ? '' : ' ad-gen__preview-btn--loading'}`}
@@ -95,7 +95,7 @@ export default function GeneratingPage({ shots, onRegen, onPreview, onBack }: Pr
             disabled={!allPreloaded}
           >
             {allPreloaded
-              ? '▶ 预览'
+              ? `▶ 预览（${successShots.length} 个镜头）`
               : `加载中 ${loadedCount} / ${successShots.length}…`}
           </button>
         </div>

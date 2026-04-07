@@ -35,6 +35,7 @@ export default function Drama() {
   const aigram = useAigram();
   const [phase, setPhase] = useState<Phase>('setup');
   const [prevPhase, setPrevPhase] = useState<Phase>('generating');
+  const [genBackPhase, setGenBackPhase] = useState<Phase>('setup');
   const [character, setCharacter] = useState<Character | null>(null);
   const [shots, setShots] = useState<Shot[]>(INITIAL_SHOTS);
 
@@ -109,6 +110,7 @@ export default function Drama() {
       ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
     }));
     setShots(pendingShots);
+    setGenBackPhase('script');
     setPhase('generating');
 
     // Save draft immediately so it appears in works list right away
@@ -144,25 +146,12 @@ export default function Drama() {
     setPhase('script');
   };
 
-  const handleLoadWork = useCallback((work: Work) => {
-    setCharacter(work.character);
-    setShots(work.shots);
-    goTheater('works');
-  }, []);
-
-  const handleEditWork = useCallback((work: Work) => {
-    setCharacter(work.character);
-    setShots(work.shots.map(s => ({
-      ...s, status: 'idle' as const, videoUrl: undefined, error: undefined, waitSeconds: undefined,
-    })));
-    setPhase('script');
-  }, []);
-
   const handleResumeWork = useCallback(async (work: Work) => {
     setCharacter(work.character);
     currentWorkId.current = work.id;
     currentCharacter.current = work.character;
     setShots(work.shots);
+    setGenBackPhase('works');
     setPhase('generating');
 
     // Resume polling for shots that have a taskId but no videoUrl yet
@@ -196,9 +185,7 @@ export default function Drama() {
         <WorksPage
           uid={aigram.me?.telegram_id}
           onBack={() => setPhase('setup')}
-          onPlay={handleLoadWork}
-          onEdit={handleEditWork}
-          onResume={handleResumeWork}
+          onOpen={handleResumeWork}
         />
       )}
       {phase === 'script' && character && (
@@ -214,8 +201,8 @@ export default function Drama() {
         <GeneratingPage
           shots={shots}
           onRegen={handleRegenShot}
-          onPreview={() => goTheater('works')}
-          onBack={() => setPhase('setup')}
+          onPreview={() => goTheater('generating')}
+          onBack={() => setPhase(genBackPhase)}
         />
       )}
       {phase === 'theater' && character && (
