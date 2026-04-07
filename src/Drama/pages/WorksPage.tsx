@@ -6,9 +6,7 @@ import './WorksPage.less';
 interface Props {
   uid?: string;
   onBack: () => void;
-  onPlay: (work: Work) => void;
-  onEdit: (work: Work) => void;
-  onResume: (work: Work) => void;
+  onOpen: (work: Work) => void;
 }
 
 function formatDate(ts: number): string {
@@ -16,10 +14,9 @@ function formatDate(ts: number): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export default function WorksPage({ uid, onBack, onPlay, onEdit, onResume }: Props) {
+export default function WorksPage({ uid, onBack, onOpen }: Props) {
   const [works, setWorks] = useState<Work[]>(() => loadWorksLocal());
   const [loading, setLoading] = useState(!!uid);
-  const [copyHint, setCopyHint] = useState<string | null>(null);
 
   // Load from cloud when uid is available
   useEffect(() => {
@@ -38,16 +35,6 @@ export default function WorksPage({ uid, onBack, onPlay, onEdit, onResume }: Pro
     } catch {
       // best-effort; UI already updated
     }
-  };
-
-  const handleShare = (work: Work) => {
-    const videos = work.shots.filter(s => s.videoUrl).map(s => s.videoUrl!);
-    if (videos.length === 0) return;
-    const text = videos.join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      setCopyHint(work.id);
-      setTimeout(() => setCopyHint(null), 2000);
-    });
   };
 
   return (
@@ -73,9 +60,9 @@ export default function WorksPage({ uid, onBack, onPlay, onEdit, onResume }: Pro
             const firstVideo = firstShot?.videoUrl;
             const thumbPoster = firstShot?.startImageUrl;
             return (
-              <div key={work.id} className="ad-work-card">
+              <div key={work.id} className="ad-work-card" onPointerDown={() => onOpen(work)}>
                 {/* Thumbnail */}
-                <div className="ad-work-card__thumb" onPointerDown={() => onPlay(work)}>
+                <div className="ad-work-card__thumb">
                   {firstVideo
                     ? <video src={firstVideo} poster={thumbPoster} playsInline muted preload="metadata" />
                     : <div className="ad-work-card__thumb-empty">▶</div>
@@ -94,25 +81,19 @@ export default function WorksPage({ uid, onBack, onPlay, onEdit, onResume }: Pro
                     <span className="ad-work-card__name">{work.character.name}</span>
                   </div>
                   <span className="ad-work-card__meta">
-                    {videoCount} 个镜头完成
-                    {pendingCount > 0 && <span className="ad-work-card__pending"> · {pendingCount} 个生成中</span>}
+                    {videoCount > 0
+                      ? <>{videoCount} 个镜头完成</>
+                      : <span className="ad-work-card__pending">生成中…</span>
+                    }
+                    {pendingCount > 0 && <span className="ad-work-card__pending"> · {pendingCount} 待完成</span>}
                     {' · '}{formatDate(work.createdAt)}
                   </span>
 
                   <div className="ad-work-card__actions">
-                    {pendingCount > 0 && (
-                      <button className="ad-work-card__btn ad-work-card__btn--resume" onPointerDown={() => onResume(work)}>
-                        恢复生成
-                      </button>
-                    )}
-                    <button className="ad-work-card__btn" onPointerDown={() => onEdit(work)}>重新编辑</button>
                     <button
-                      className="ad-work-card__btn ad-work-card__btn--share"
-                      onPointerDown={() => handleShare(work)}
-                    >
-                      {copyHint === work.id ? '已复制 ✓' : '复制链接'}
-                    </button>
-                    <button className="ad-work-card__btn ad-work-card__btn--del" onPointerDown={() => handleDelete(work.id)}>删除</button>
+                      className="ad-work-card__btn ad-work-card__btn--del"
+                      onPointerDown={e => { e.stopPropagation(); handleDelete(work.id); }}
+                    >删除</button>
                   </div>
                 </div>
               </div>

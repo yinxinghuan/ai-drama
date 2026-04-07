@@ -81,6 +81,10 @@
   border-radius: 14px;
   overflow: hidden;
   padding: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  &:active { background: rgba(255,255,255,0.08); }
 }
 
 .ad-work-card__thumb {
@@ -91,8 +95,6 @@
   overflow: hidden;
   background: #111;
   flex-shrink: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 
   video {
     width: 100%;
