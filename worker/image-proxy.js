@@ -96,10 +96,6 @@ async function enhancePromptGLM(userPrompt, imageUrl, apiKey) {
   return result.trim();
 }
 
-function worksKey(uid) {
-  return `prod/drama/works/${uid}.json`;
-}
-
 function jsonResp(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -129,9 +125,8 @@ export default {
       }
     }
 
-    // ── /works: cloud draft storage ───────────────────────────────────────────
+    // ── /works: cloud draft storage (D1) ─────────────────────────────────────
     if (url.pathname === '/works') {
-      // Validate uid: must be numeric telegram_id
       const uid = request.method === 'GET'
         ? url.searchParams.get('uid')
         : (await request.clone().json().catch(() => ({}))).uid;
@@ -140,13 +135,20 @@ export default {
         return jsonResp({ error: 'invalid uid' }, 400);
       }
 
-      const key = worksKey(uid);
-
-      // GET /works?uid=xxx → load works list
+      // GET /works?uid=xxx → list all works for user
       if (request.method === 'GET') {
         try {
-          const works = await readJsonFromOSS(key, env.OSS_KEY_ID, env.OSS_SECRET);
-          return jsonResp(works ?? []);
+          const { results } = await env.DB.prepare(
+            'SELECT id, telegram_id, created_at, character, shots FROM works WHERE telegram_id = ? ORDER BY created_at DESC LIMIT 50'
+          ).bind(uid).all();
+          const works = results.map(r => ({
+            id: r.id,
+            telegram_id: r.telegram_id,
+            createdAt: r.created_at,
+            character: JSON.parse(r.character),
+            shots: JSON.parse(r.shots),
+          }));
+          return jsonResp(works);
         } catch (e) {
           return jsonResp({ error: String(e) }, 500);
         }
@@ -156,25 +158,22 @@ export default {
       if (request.method === 'POST') {
         try {
           const { work } = await request.json();
-          let works = await readJsonFromOSS(key, env.OSS_KEY_ID, env.OSS_SECRET) ?? [];
-          const idx = works.findIndex(w => w.id === work.id);
-          if (idx >= 0) works[idx] = work;
-          else works.unshift(work);
-          works = works.slice(0, 30); // keep newest 30
-          await writeJsonToOSS(key, works, env.OSS_KEY_ID, env.OSS_SECRET);
+          await env.DB.prepare(
+            'INSERT INTO works (id, telegram_id, created_at, character, shots) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET shots = excluded.shots, character = excluded.character, created_at = excluded.created_at'
+          ).bind(work.id, uid, work.createdAt, JSON.stringify(work.character), JSON.stringify(work.shots)).run();
           return jsonResp({ ok: true });
         } catch (e) {
           return jsonResp({ error: String(e) }, 500);
         }
       }
 
-      // DELETE /works { uid, work_id } → remove one work
+      // DELETE /works { uid, work_id } → delete one work (uid must match)
       if (request.method === 'DELETE') {
         try {
           const { work_id } = await request.json();
-          let works = await readJsonFromOSS(key, env.OSS_KEY_ID, env.OSS_SECRET) ?? [];
-          works = works.filter(w => w.id !== work_id);
-          await writeJsonToOSS(key, works, env.OSS_KEY_ID, env.OSS_SECRET);
+          await env.DB.prepare(
+            'DELETE FROM works WHERE id = ? AND telegram_id = ?'
+          ).bind(work_id, uid).run();
           return jsonResp({ ok: true });
         } catch (e) {
           return jsonResp({ error: String(e) }, 500);
