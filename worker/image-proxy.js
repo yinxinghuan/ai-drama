@@ -232,6 +232,21 @@ export default {
       });
     }
 
+    // ── /video_task: proxy to video task polling API ───────────────────────────
+    if (url.pathname === '/video_task') {
+      const body = await request.text();
+      const res = await fetch('https://u545921-b746-8a491f44.westc.gpuhub.com:8443/video_task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+      const data = await res.text();
+      return new Response(data, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
     // ── Default: proxy to image generation API ───────────────────────────────
     const body = await request.text();
     const res = await fetch('http://aiservice.wdabuliu.com:8019/genl_image', {
