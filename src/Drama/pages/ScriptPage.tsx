@@ -131,6 +131,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
       (wait) => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'waiting', wait }); },
       ()     => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'generating', wait: 0 }); },
       ()     => signal.cancelled,
+      true, // skip rehost for preview — only needed at video submission time
     ).then(url => {
       if (signal.cancelled) return;
       patchFrame(shotId, type, { phase: 'downloading', wait: 0, url });
@@ -142,8 +143,9 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
     });
   }, [patchFrame]);
 
-  // Auto-generate start frames on mount and when template applied (IDs change)
+  // Auto-generate start frames when shots change AND default character is ready
   useEffect(() => {
+    if (!defaultCharacter) return; // wait for character to load
     const signals = new Map<string, { cancelled: boolean }>();
     shots
       .filter(s => s.prompt.trim() && !frames[s.id]?.start.url)
@@ -155,7 +157,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
       });
     return () => { signals.forEach(sig => { sig.cancelled = true; }); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shots.map(s => s.id).join(',')]);
+  }, [shots.map(s => s.id).join(','), defaultCharacter?.telegram_id]);
 
   // ── Shot mutations ─────────────────────────────────────────────────────────
 

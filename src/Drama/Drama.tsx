@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Character, Shot, Phase, Work, DramaTemplate } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
-import { generateSceneImage, enhancePrompt } from './utils/imageApi';
+import { generateSceneImage, enhancePrompt, rehostImage } from './utils/imageApi';
 import { submitVideo, pollVideoTask, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
 import { saveWork } from './utils/works';
 import HomePage from './pages/HomePage';
@@ -97,8 +97,11 @@ export default function Drama() {
     let startUrl = shot.startImageUrl;
     if (!startUrl) {
       startUrl = await generateSceneImage(prompt, char.head_url);
-      updateShot(shot.id, { startImageUrl: startUrl });
+    } else {
+      // Preview frames skip rehost; rehost now for stable video access
+      startUrl = await rehostImage(startUrl);
     }
+    updateShot(shot.id, { startImageUrl: startUrl });
 
     updateShot(shot.id, { status: 'waiting' });
     await waitForVideoCooldown(remaining => {
