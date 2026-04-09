@@ -21,7 +21,6 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
   const [shotIndicator, setShotIndicator] = useState<number | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const controlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const indicatorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeStart = useRef<{ x: number; y: number; t: number } | null>(null);
 
   const shot = playable[current];
@@ -44,16 +43,20 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
     });
   }, [current]);
 
-  // ── Shot indicator ───────────────────────────────────────────────────────
-  const showShotIndicator = useCallback((idx: number) => {
-    setShotIndicator(idx);
-    if (indicatorTimer.current) clearTimeout(indicatorTimer.current);
-    indicatorTimer.current = setTimeout(() => setShotIndicator(null), 1500);
+  // ── Show controls + indicator together ─────────────────────────────────
+  const showAll = useCallback((idx?: number) => {
+    if (idx !== undefined) setShotIndicator(idx);
+    setShowControls(true);
+    if (controlsTimer.current) clearTimeout(controlsTimer.current);
+    controlsTimer.current = setTimeout(() => {
+      setShowControls(false);
+      setShotIndicator(null);
+    }, 4000);
   }, []);
 
-  // Show indicator on first render
+  // Show on first render
   useEffect(() => {
-    showShotIndicator(0);
+    showAll(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -61,20 +64,8 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
   const goTo = useCallback((idx: number) => {
     if (idx < 0 || idx >= playable.length || idx === current) return;
     setCurrent(idx);
-    showShotIndicator(idx);
-  }, [playable.length, current, showShotIndicator]);
-
-  // ── Controls auto-hide ───────────────────────────────────────────────────
-  const showControlsTemporarily = useCallback(() => {
-    setShowControls(true);
-    if (controlsTimer.current) clearTimeout(controlsTimer.current);
-    controlsTimer.current = setTimeout(() => setShowControls(false), 3000);
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowControls(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    showAll(idx);
+  }, [playable.length, current, showAll]);
 
   // ── Swipe gesture ────────────────────────────────────────────────────────
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -96,9 +87,9 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
       else goTo(current - 1);          // swipe right → prev
     } else {
       // Tap — toggle controls
-      showControlsTemporarily();
+      showAll();
     }
-  }, [current, goTo, showControlsTemporarily]);
+  }, [current, goTo, showAll]);
 
   // ── Empty state ──────────────────────────────────────────────────────────
   if (playable.length === 0) {
@@ -137,15 +128,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
         />
       ))}
 
-      {/* Shot number indicator */}
-      {shotIndicator !== null && (
-        <div className="ad-theater__indicator" key={shotIndicator}>
-          <span className="ad-theater__indicator-num">{shotIndicator + 1}</span>
-          <span className="ad-theater__indicator-total">/ {playable.length}</span>
-        </div>
-      )}
-
-      {/* Overlay controls */}
+      {/* Overlay controls + indicator shown together */}
       <div className={`ad-theater__overlay${showControls ? ' ad-theater__overlay--show' : ''}`}>
         {/* Top */}
         <div className="ad-theater__top">
@@ -165,6 +148,18 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
           })()}
           <span className="ad-theater__counter">{current + 1} / {playable.length}</span>
         </div>
+
+        {/* Shot indicator — upper center */}
+        {shotIndicator !== null && (
+          <div className="ad-theater__indicator" key={shotIndicator}>
+            <span className="ad-theater__indicator-label">SCENE</span>
+            <div className="ad-theater__indicator-row">
+              <span className="ad-theater__indicator-num">{String(shotIndicator + 1).padStart(2, '0')}</span>
+              <span className="ad-theater__indicator-sep">/</span>
+              <span className="ad-theater__indicator-total">{String(playable.length).padStart(2, '0')}</span>
+            </div>
+          </div>
+        )}
 
         {/* Bottom */}
         <div className="ad-theater__bottom">
