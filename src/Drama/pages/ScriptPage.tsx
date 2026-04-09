@@ -3,7 +3,7 @@ import React from 'react';
 import type { Character, Shot } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { SHOT_PRESETS } from '../utils/presets';
-import { generateSceneImage, subscribeCooldown, uploadImage } from '../utils/imageApi';
+import { generateSceneImage, subscribeCooldown, uploadImage, suggestNextShot } from '../utils/imageApi';
 import CharacterSelect from '../components/CharacterSelect';
 import './ScriptPage.less';
 
@@ -151,8 +151,24 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
     onShotsChange(prev => prev.map(s => s.id === id ? { ...s, prompt } : s));
   };
 
+  const [suggestingId, setSuggestingId] = useState<string | null>(null);
+
   const addShot = () => {
-    onShotsChange(prev => prev.length >= 8 ? prev : [...prev, makeShot()]);
+    if (shots.length >= 8) return;
+    const newShot = makeShot();
+    onShotsChange(prev => [...prev, newShot]);
+
+    // AI suggest based on previous shots that have content
+    const existing = shots.map(s => s.prompt).filter(p => p.trim());
+    if (existing.length > 0) {
+      setSuggestingId(newShot.id);
+      suggestNextShot(existing).then(suggestion => {
+        if (suggestion) {
+          onShotsChange(prev => prev.map(s => s.id === newShot.id && !s.prompt.trim() ? { ...s, prompt: suggestion } : s));
+        }
+        setSuggestingId(null);
+      });
+    }
   };
 
   const removeShot = (id: string) => {
@@ -239,7 +255,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                 className="ad-shot__input"
                 value={shot.prompt}
                 onChange={e => updatePrompt(shot.id, e.target.value)}
-                placeholder="描述这个镜头的场景…"
+                placeholder={suggestingId === shot.id ? 'AI 正在续写…' : '描述这个镜头的场景…'}
                 rows={2}
               />
               <div className="ad-shot__hints">

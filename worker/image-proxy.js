@@ -125,6 +125,49 @@ export default {
       }
     }
 
+    // ── /suggest: AI continuation of shot script ─────────────────────────────
+    if (url.pathname === '/suggest') {
+      try {
+        const { previousShots } = await request.json();
+        if (!previousShots || !Array.isArray(previousShots) || previousShots.length === 0) {
+          return jsonResp({ error: 'previousShots required' }, 400);
+        }
+        const numbered = previousShots.map((s, i) => `镜头${i + 1}: ${s}`).join('\n');
+        const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${env.GLM_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'glm-4.1v-thinking-flash',
+            stream: false,
+            do_sample: true,
+            temperature: 0.9,
+            top_p: 0.7,
+            messages: [{
+              role: 'user',
+              content: `你是专业的电影分镜编剧。根据已有的镜头剧本，续写下一个镜头。要求：
+- 保持与已有镜头一致的风格、情绪和叙事节奏
+- 用中文，一句话描述场景、动作和氛围
+- 直接输出镜头描述，不要编号、不要解释
+
+已有镜头：
+${numbered}
+
+续写下一个镜头：`,
+            }],
+          }),
+        });
+        if (!res.ok) throw new Error(`GLM API error: ${res.status}`);
+        const data = await res.json();
+        let result = data.choices?.[0]?.message?.content ?? '';
+        if (result.includes('<|begin_of_box|>')) {
+          result = result.split('<|begin_of_box|>').pop().split('<|end_of_box|>')[0];
+        }
+        return jsonResp({ suggestion: result.trim() });
+      } catch (e) {
+        return jsonResp({ suggestion: '' });
+      }
+    }
+
     // ── /works: cloud draft storage (D1) ─────────────────────────────────────
     if (url.pathname === '/works') {
       const uid = request.method === 'GET'
