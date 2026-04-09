@@ -125,14 +125,13 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
     let refUrl: string;
 
     if (type === 'end') {
-      // Use AI to generate a differentiated end-frame prompt
+      // Use AI to generate a differentiated end-frame prompt (camera/action change, same style)
       patchFrame(shotId, type, { phase: 'generating', wait: 0 });
       const aiPrompt = await generateEndFramePrompt(prompt, character?.avatar_describe);
       if (signal.cancelled) return;
-      // Use AI prompt if available, otherwise fall back to simple builder
       apiPrompt = aiPrompt || buildEndPrompt(prompt, character);
-      // Don't use character ref image for end frame — let prompt drive the difference
-      refUrl = '';
+      // Keep character ref image to maintain consistent art style
+      refUrl = character?.head_url || '';
     } else {
       apiPrompt = buildPrompt(prompt, character);
       refUrl = character?.head_url || '';
@@ -147,7 +146,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
       true, // skip rehost for preview — only needed at video submission time
     ).then(url => {
       if (signal.cancelled) return;
-      patchFrame(shotId, type, { phase: 'idle', wait: 0, url });
+      patchFrame(shotId, type, { phase: 'downloading', wait: 0, url });
     }).catch(err => {
       if (!signal.cancelled) {
         console.error('生图失败', err);

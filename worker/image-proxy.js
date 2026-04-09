@@ -146,9 +146,11 @@ export default {
               content: `You are a cinematography expert. Given a scene description for a video's OPENING frame, create an English image prompt for the ENDING frame of the same shot.
 
 CRITICAL RULES:
-- The ending must show significant visual CHANGE from the opening (different pose, position, camera angle, lighting, or environment state)
-- Think about what happens at the END of this scene — the character has moved, the light has shifted, the mood has evolved
-- Keep the same setting/location but show TIME PASSING or ACTION COMPLETING
+- SAME art style, color palette, rendering quality, and visual aesthetic as the opening — do NOT change the artistic style
+- Change the CAMERA ANGLE (e.g. close-up → wide shot, eye-level → overhead, front → back view)
+- Change the CHARACTER'S POSE or POSITION (e.g. standing → walking away, facing camera → turned around, sitting → standing up)
+- Show the ACTION COMPLETING or TIME PASSING within the same scene
+- Keep the same setting, location, lighting mood, and atmosphere
 - Output ONLY the English image prompt, no explanation
 
 ${charDesc ? `Character: ${charDesc}` : ''}
