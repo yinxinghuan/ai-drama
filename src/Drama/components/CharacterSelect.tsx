@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../i18n';
 import type { Character } from '../types';
 import './CharacterSelect.less';
 
@@ -28,7 +29,7 @@ export default function CharacterSelect({ characters, current, onPick, onClose }
     <div className="ad-charsel">
       <div className="ad-charsel__overlay" onPointerDown={onClose} />
       <div className="ad-charsel__dialog">
-        <div className="ad-charsel__title">选择角色</div>
+        <div className="ad-charsel__title">{t('charsel.title')}</div>
 
         <div className="ad-charsel__body">
           <div className="ad-charsel__list">
@@ -64,7 +65,7 @@ export default function CharacterSelect({ characters, current, onPick, onClose }
             className={`ad-charsel__confirm${isChanged ? '' : ' ad-charsel__confirm--disabled'}`}
             onPointerDown={isChanged ? handleConfirm : undefined}
           >
-            {isChanged ? `确认: ${pendingChar?.name ?? ''}` : '✓ 已选定'}
+            {isChanged ? `${t('charsel.confirm')}: ${pendingChar?.name ?? ''}` : t('charsel.confirmed')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { t } from './i18n';
 import type { Character, Shot, Phase, Work, DramaTemplate } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage, enhancePrompt, rehostImage } from './utils/imageApi';
@@ -121,7 +122,7 @@ export default function Drama() {
       const videoUrl = await pollVideoTask(taskId);
       updateShot(shotId, { status: 'done', videoUrl });
     } catch (err) {
-      updateShot(shotId, { status: 'error', error: err instanceof Error ? err.message : '生成失败' });
+      updateShot(shotId, { status: 'error', error: err instanceof Error ? err.message : t('error.genFailed') });
     }
     setShots(prev => { saveCurrentWork(prev); return prev; });
   }, [updateShot, saveCurrentWork]);
@@ -158,7 +159,7 @@ export default function Drama() {
         const taskId = await submitShotJob(shot, shotChar);
         await pollShot(shot.id, taskId);
       } catch (err) {
-        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : t('error.submitFailed') });
         setShots(prev => { saveCurrentWork(prev); return prev; });
       }
     }
@@ -174,7 +175,7 @@ export default function Drama() {
       setShots(prev => { saveCurrentWork(prev); return prev; });
       await pollShot(shotId, taskId);
     } catch (err) {
-      updateShot(shotId, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+      updateShot(shotId, { status: 'error', error: err instanceof Error ? err.message : t('error.submitFailed') });
       setShots(prev => { saveCurrentWork(prev); return prev; });
     }
   }, [shots, defaultCharacter, submitShotJob, pollShot, updateShot, saveCurrentWork]);
@@ -229,7 +230,7 @@ export default function Drama() {
         const taskId = await submitShotJob(shot, char);
         await pollShot(shot.id, taskId);
       } catch (err) {
-        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : '提交失败' });
+        updateShot(shot.id, { status: 'error', error: err instanceof Error ? err.message : t('error.submitFailed') });
         setShots(prev => { saveCurrentWork(prev); return prev; });
       }
     }

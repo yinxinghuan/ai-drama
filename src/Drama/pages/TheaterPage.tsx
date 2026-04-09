@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { t } from '../i18n';
 import type { Shot, Character } from '../types';
 import './TheaterPage.less';
 
@@ -102,13 +103,13 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
     const errors = shots.filter(s => s.status === 'error');
     return (
       <div className="ad-theater ad-theater--empty">
-        <p>所有镜头都生成失败了</p>
+        <p>{t('theater.allFailed')}</p>
         {errors.map((s, i) => (
           <p key={s.id} style={{ fontSize: 11, color: '#f87171', margin: '4px 16px', wordBreak: 'break-all' }}>
-            镜头{i + 1}: {s.error}
+            {t('script.shot')} {i + 1}: {s.error}
           </p>
         ))}
-        <button className="ad-theater__restart" onPointerDown={onRestart}>重新开始</button>
+        <button className="ad-theater__restart" onPointerDown={onRestart}>{t('theater.restart')}</button>
       </div>
     );
   }
@@ -185,14 +186,14 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
           </div>
           <div className="ad-theater__actions">
             <button className="ad-theater__regen ad-theater__regen--current" onPointerDown={(e) => { e.stopPropagation(); onRegenShot(shot.id); }}>
-              重拍此镜头
+              {t('theater.regenCurrent')}
             </button>
             {failedShots.map(s => (
               <button key={s.id} className="ad-theater__regen" onPointerDown={(e) => { e.stopPropagation(); onRegenShot(s.id); }}>
-                重拍镜头 {shots.indexOf(s) + 1}（失败）
+                {t('theater.regenFailed')} {shots.indexOf(s) + 1}（{t('theater.failed')}）
               </button>
             ))}
-            <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); onRestart(); }}>重新导演</button>
+            <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); onRestart(); }}>{t('theater.reDirector')}</button>
           </div>
         </div>
       </div>

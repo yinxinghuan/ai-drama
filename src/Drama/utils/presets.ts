@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { DramaTemplate, TemplateCategory } from '../types';
 
 import prevCityHustle from '../img/templates/city_hustle.jpg';
@@ -14,190 +15,184 @@ import prevLetterNeverSent from '../img/templates/letter_never_sent.jpg';
 import prevLastTrain from '../img/templates/last_train.jpg';
 
 export const SHOT_PRESETS = [
-  // 开场
-  '清晨，主角从床边站起，走向窗边，望向窗外晨光',
-  '街头，主角从人群中逆向走来，停步，抬头望向远方',
-  // 情绪
-  '咖啡馆，主角端起咖啡杯，转身，对视来人，嘴角微扬',
-  '深夜，主角坐在台阶上，捧着外卖盒，抬头看月亮',
-  // 动作
-  '雨中，主角从屋檐下跑出，冲入雨幕，回头大笑',
-  '主角从远处奔跑而来，在镜头前急停，大口喘气',
-  // 环境
-  '高楼顶端，主角走到边缘，俯身向下张望，风吹衣角',
-  '海边礁石上，主角站起身，向着海浪伸展双臂',
-  // 转折
-  '主角收到消息，从低头到缓缓抬头，表情由惊变喜',
-  '主角在镜子前整理衣领，转身，走向门口，推门而出',
-  // 结尾
-  '夕阳下，主角从镜头前走远，在远处转身，挥手告别',
-  '主角背对镜头，站在路口，风吹发丝，缓缓转身',
+  t('preset.0'),
+  t('preset.1'),
+  t('preset.2'),
+  t('preset.3'),
+  t('preset.4'),
+  t('preset.5'),
+  t('preset.6'),
+  t('preset.7'),
+  t('preset.8'),
+  t('preset.9'),
+  t('preset.10'),
+  t('preset.11'),
 ];
 
 export const TEMPLATE_CATEGORIES: { key: TemplateCategory; label: string }[] = [
-  { key: 'all',     label: '全部' },
-  { key: 'life',    label: '生活' },
-  { key: 'emotion', label: '情感' },
-  { key: 'journey', label: '旅途' },
-  { key: 'genre',   label: '风格片' },
+  { key: 'all',     label: t('cat.all') },
+  { key: 'life',    label: t('cat.life') },
+  { key: 'emotion', label: t('cat.emotion') },
+  { key: 'journey', label: t('cat.journey') },
+  { key: 'genre',   label: t('cat.genre') },
 ];
 
 export const DRAMA_TEMPLATES: DramaTemplate[] = [
   // ── 都市 ──────────────────────────────────────────────────────────────────
   {
     id: 'city_hustle',
-    label: '💼 都市奋斗',
+    label: t('tpl.city_hustle'),
     category: 'life',
     preview: prevCityHustle,
     shots: [
-      '清晨六点，闹钟响起，主角睁开眼，翻身看了一眼窗外还没亮的天，深吸一口气，从床上坐起',
-      '拥挤的地铁车厢，主角被人群挤到角落，单手抓着扶手，低头看手机上的工作消息，嘴角微微绷紧',
-      '深夜十一点，空荡荡的办公室只剩主角一盏台灯，主角站起身走向落地窗，俯瞰整座城市的万家灯火，玻璃上映出自己疲惫又坚定的脸',
-      '第二天清晨，主角走出公寓大门，阳光洒在脸上，背起背包，大步走向街道尽头，步伐比昨天更快',
+      t('tpl.city_hustle.1'),
+      t('tpl.city_hustle.2'),
+      t('tpl.city_hustle.3'),
+      t('tpl.city_hustle.4'),
     ],
   },
   {
     id: 'midnight_diner',
-    label: '🍜 深夜食堂',
+    label: t('tpl.midnight_diner'),
     category: 'life',
     preview: prevMidnightDiner,
     shots: [
-      '凌晨一点，雨后的小巷弄，霓虹招牌在湿漉漉的地面上投下彩色倒影，主角推开一扇冒着热气的小店门帘',
-      '狭小温暖的店内，老板在灶台前忙碌，主角独自坐在吧台最角落的位置，两手捧着一碗冒着白烟的面，低头闻了闻，眼眶微微发红',
-      '主角吃完面，把碗放下，从口袋掏出一张折得很旧的照片看了很久，然后小心翼翼地折好放回去',
-      '主角起身离开，走到门口回头对老板点了点头，推开门帘走进深夜的街道，背影渐渐被路灯拉长',
+      t('tpl.midnight_diner.1'),
+      t('tpl.midnight_diner.2'),
+      t('tpl.midnight_diner.3'),
+      t('tpl.midnight_diner.4'),
     ],
   },
 
   // ── 爱情 ──────────────────────────────────────────────────────────────────
   {
     id: 'city_romance',
-    label: '💘 城市爱情',
+    label: t('tpl.city_romance'),
     category: 'emotion',
     preview: prevCityRomance,
     shots: [
-      '午后的咖啡馆，阳光透过落地窗照进来，主角推门进入，铃铛叮地一声，隔着错落的人群和咖啡机的蒸汽，与对面的人四目相对，时间仿佛慢了下来',
-      '雨夜的街头，两人共撑一把不太够大的伞，肩膀紧紧靠在一起，路灯在雨幕中晕开成一团暖黄色的光，两人的影子在积水中交叠',
-      '地铁站台，末班车的风吹过来，主角转身看向对方，嘴唇微动想说什么却没说出口，列车进站的灯光扫过两人的脸',
+      t('tpl.city_romance.1'),
+      t('tpl.city_romance.2'),
+      t('tpl.city_romance.3'),
     ],
   },
   {
     id: 'letter_never_sent',
-    label: '💌 寄不出的信',
+    label: t('tpl.letter_never_sent'),
     category: 'emotion',
     preview: prevLetterNeverSent,
     shots: [
-      '午后书房，阳光照在桌面上，主角坐在老旧的木桌前，手里握着钢笔，面前摊开一张信纸，写了几行又停下，抬头望向窗外发呆',
-      '主角起身走到窗边，手里握着那封信，窗外的梧桐树叶在风中沙沙作响，主角的表情又温柔又遗憾',
-      '傍晚，主角走到街角的邮筒前，站了很久，手里的信举到投信口又放下来，反复了几次',
-      '主角转身离开邮筒，把信折好放进大衣内袋，贴近心口的位置，夕阳把整条街染成金色，主角的背影缓缓走远',
+      t('tpl.letter_never_sent.1'),
+      t('tpl.letter_never_sent.2'),
+      t('tpl.letter_never_sent.3'),
+      t('tpl.letter_never_sent.4'),
     ],
   },
 
   // ── 青春 ──────────────────────────────────────────────────────────────────
   {
     id: 'youth_confession',
-    label: '🌅 青春告白',
+    label: t('tpl.youth_confession'),
     category: 'emotion',
     preview: prevYouthConfession,
     shots: [
-      '放学后的操场，夕阳把跑道染成橘红色，主角从远处向镜头跑来，跑得气喘吁吁，在镜头前急停，弯腰撑着膝盖大口喘气',
-      '教学楼走廊尽头，主角靠在墙上给自己鼓劲，然后一个深呼吸，转过身走向走廊另一头等着的人，脚步越来越快',
-      '傍晚的天台上，两人并排背靠栏杆，谁也没说话，风吹过两人的衣角和头发，远处是一整片燃烧般的晚霞，主角偷偷侧头看了对方一眼',
+      t('tpl.youth_confession.1'),
+      t('tpl.youth_confession.2'),
+      t('tpl.youth_confession.3'),
     ],
   },
 
   // ── 旅行 ──────────────────────────────────────────────────────────────────
   {
     id: 'solo_journey',
-    label: '🗺️ 独自出发',
+    label: t('tpl.solo_journey'),
     category: 'journey',
     preview: prevSoloJourney,
     shots: [
-      '凌晨五点，天还没完全亮，主角轻轻关上家门，拖着行李箱走下楼梯，在大门口停了一秒，回头看了一眼楼上还亮着的那盏灯',
-      '火车车窗旁，主角侧脸靠在冰凉的玻璃上，窗外的风景飞速掠过——田野、铁塔、远山，车厢里的光影在主角脸上明暗交替',
-      '陌生城市的十字路口，主角站在路中间，摘下耳机，听见了街头艺人的手风琴声，缓缓环顾四周，嘴角不自觉地扬了起来',
-      '海边公路的尽头，主角把行李箱放在身旁，面朝大海张开双臂，海风把外套吹得像翅膀一样鼓起来',
+      t('tpl.solo_journey.1'),
+      t('tpl.solo_journey.2'),
+      t('tpl.solo_journey.3'),
+      t('tpl.solo_journey.4'),
     ],
   },
   {
     id: 'last_train',
-    label: '🚃 末班列车',
+    label: t('tpl.last_train'),
     category: 'journey',
     preview: prevLastTrain,
     shots: [
-      '昏黄灯光下的老式火车站台，主角独自坐在长椅上，行李箱靠在脚边，抬头看着站台上方古旧的时刻表，指针缓缓移动',
-      '末班列车缓缓进站，车窗里透出暖黄色的灯光，主角站起身，在蒸汽和灯光中拎起行李箱，走向车门',
-      '空荡荡的车厢里只有主角一个人，窗外是漆黑的夜和偶尔闪过的零星灯火，主角把额头贴在车窗上，看着自己在玻璃上的倒影',
-      '天蒙蒙亮时列车到站，主角走下车，站台上晨雾弥漫，远处有人举着接站牌，主角加快脚步走过去，雾气在身后散开',
+      t('tpl.last_train.1'),
+      t('tpl.last_train.2'),
+      t('tpl.last_train.3'),
+      t('tpl.last_train.4'),
     ],
   },
 
   // ── 情绪 ──────────────────────────────────────────────────────────────────
   {
     id: 'heavy_heart',
-    label: '🌧️ 心事重重',
+    label: t('tpl.heavy_heart'),
     category: 'emotion',
     preview: prevHeavyHeart,
     shots: [
-      '雨天的公寓里，主角站在落地玻璃窗前，指尖沿着玻璃上的雨痕缓缓滑下，窗外是灰蒙蒙的城市天际线',
-      '便利店深夜，日光灯嗡嗡作响，主角一个人坐在窗边的小桌旁，手里攥着一杯热饮，眼睛出神地望着窗外空无一人的马路',
-      '傍晚的地铁站出口，主角戴着耳机走出来，汇入下班的人潮中，被人群裹挟着往前走，表情空白，逐渐消失在人潮的尽头',
+      t('tpl.heavy_heart.1'),
+      t('tpl.heavy_heart.2'),
+      t('tpl.heavy_heart.3'),
     ],
   },
 
   // ── 高光 ──────────────────────────────────────────────────────────────────
   {
     id: 'spotlight',
-    label: '🎉 高光时刻',
+    label: t('tpl.spotlight'),
     category: 'life',
     preview: prevSpotlight,
     shots: [
-      '幕布缓缓拉开，主角从舞台侧面走出，一束聚光灯从头顶打下来，照亮整个人，主角停在舞台正中央，面对黑暗中的观众席',
-      '颁奖台上，主持人念到名字，主角从座位上站起，在掌声中走上台，接过奖杯的瞬间，灯光更亮了一级，主角转身面向观众，把奖杯高高举过头顶',
-      '散场后，灯光关掉了大半，空旷的舞台上只剩主角一人站在那里，缓缓环顾四周空荡荡的座椅，然后仰头深吸一口气，露出一个只属于自己的微笑',
+      t('tpl.spotlight.1'),
+      t('tpl.spotlight.2'),
+      t('tpl.spotlight.3'),
     ],
   },
 
   // ── 悬疑 ──────────────────────────────────────────────────────────────────
   {
     id: 'noir_alley',
-    label: '🔍 暗巷追踪',
+    label: t('tpl.noir_alley'),
     category: 'genre',
     preview: prevNoirAlley,
     shots: [
-      '深夜的老城区，路灯只亮了一半，主角竖起风衣领子，沿着湿漉漉的石板路快步走进一条窄巷，墙上的影子被拉得又长又扭曲',
-      '巷子尽头的路灯下，主角停下脚步，从口袋里掏出一张皱巴巴的黑白照片，借着昏暗的灯光仔细辨认，然后抬头打量对面那扇紧闭的铁门',
-      '主角推开铁门走进去，楼梯间里只有自己的脚步声回荡，墙上的油漆斑驳脱落，每走一步楼梯都吱呀作响',
-      '顶楼房间的门虚掩着，主角伸手轻轻推开，门缝里透出一线光，映照出主角半张警觉的脸，紧接着门完全打开——房间里一张桌子、一盏台灯、一把空椅子',
+      t('tpl.noir_alley.1'),
+      t('tpl.noir_alley.2'),
+      t('tpl.noir_alley.3'),
+      t('tpl.noir_alley.4'),
     ],
   },
 
   // ── 奇幻 ──────────────────────────────────────────────────────────────────
   {
     id: 'ghibli_wind',
-    label: '🌿 风之旅人',
+    label: t('tpl.ghibli_wind'),
     category: 'genre',
     preview: prevGhibliWind,
     shots: [
-      '辽阔的翠绿山丘上，风吹过齐腰的草浪，主角站在山顶俯瞰远方连绵的云海，斗篷在风中猎猎作响，手里握着一根古旧的木杖',
-      '主角沿着山坡小径往下走，路过一棵巨大的古树，树冠遮天蔽日，树根间有萤火虫一样的光点在漂浮，主角停下来伸手去接了一颗',
-      '黄昏时分，主角走过一座长满青苔的石拱桥，桥下是清澈的溪流，远处的天空被晚霞染成紫红和金色，几只不知名的鸟从头顶掠过',
-      '夜幕降临，主角在巨石旁生起一堆小小的篝火，火光映着主角的脸，抬头望向满天繁星，远方的山脊上隐约浮现出巨大的、发着微光的神秘轮廓',
+      t('tpl.ghibli_wind.1'),
+      t('tpl.ghibli_wind.2'),
+      t('tpl.ghibli_wind.3'),
+      t('tpl.ghibli_wind.4'),
     ],
   },
 
   // ── 复古 ──────────────────────────────────────────────────────────────────
   {
     id: 'silent_film',
-    label: '🎬 默片时代',
+    label: t('tpl.silent_film'),
     category: 'genre',
     preview: prevSilentFilm,
     shots: [
-      '黑白画面，老式剧院门口，主角穿着礼帽和长风衣，站在旋转门前整理袖口，画面有轻微的胶片颗粒和竖条纹抖动',
-      '剧院大厅里，水晶吊灯的光芒在黑白画面中格外耀眼，主角穿过人群，每个人的动作都带着一种夸张的戏剧感，主角在人群中回头寻找着什么',
-      '空荡的舞台上，一架三角钢琴，主角独自走向钢琴，坐下，手指落在琴键上，虽然是无声的默片，镜头用光影的变化传递出旋律的情感',
-      '曲终，主角站起身，面向镜头缓缓鞠躬，胶片画面闪烁了几下，像是在致敬一个远去的时代',
+      t('tpl.silent_film.1'),
+      t('tpl.silent_film.2'),
+      t('tpl.silent_film.3'),
+      t('tpl.silent_film.4'),
     ],
   },
 ];
