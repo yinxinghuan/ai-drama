@@ -57,7 +57,7 @@ export default function HomePage({
         <button className="ad-home__works-btn" onPointerDown={onOpenWorks}>{t('app.myWorks')}</button>
       </div>
 
-      <div className="ad-home__char-row" onPointerDown={() => setShowCharSelect(true)}>
+      <div className="ad-home__char-row" onClick={() => setShowCharSelect(true)}>
         <div className="ad-home__char-avatar">
           {defaultCharacter?.head_url
             ? <img src={defaultCharacter.head_url} alt={defaultCharacter.name} draggable={false} />
@@ -82,7 +82,7 @@ export default function HomePage({
       </div>
 
       <div className="ad-home__grid">
-        <div className="ad-home__card" onPointerDown={onFreeCreate}>
+        <div className="ad-home__card" onClick={onFreeCreate}>
           <img className="ad-home__card-img" src={freeCreateCover} alt="自由创作" draggable={false} />
           <div className="ad-home__card-info">
             <span className="ad-home__card-label">{t('home.freeCreate')}</span>
@@ -94,7 +94,7 @@ export default function HomePage({
           <div
             key={tmpl.id}
             className="ad-home__card"
-            onPointerDown={() => onSelectTemplate(tmpl)}
+            onClick={() => onSelectTemplate(tmpl)}
           >
             {tmpl.preview
               ? <img className="ad-home__card-img" src={tmpl.preview} alt={tmpl.label} draggable={false} />
