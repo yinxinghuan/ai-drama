@@ -139,7 +139,7 @@ export function useAigram(): AigramState {
             ? (contactsRaw as { data: RawUser[] }).data
             : [];
 
-        const friends = rawList.slice(0, 9).map(u => parseUser(u));
+        const friends = rawList.map(u => parseUser(u));
         setContacts(friends.length > 0 ? friends : DEMO_CONTACTS);
         setIsDemo(friends.length === 0);
       } catch {
