@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import React from 'react';
 import type { Character, Shot } from '../types';
-import { SHOT_PRESETS, DRAMA_TEMPLATES } from '../utils/presets';
+import type { AigramState } from '../hooks/useAigram';
+import { SHOT_PRESETS } from '../utils/presets';
 import { generateSceneImage, subscribeCooldown, uploadImage } from '../utils/imageApi';
+import CharacterSelect from '../components/CharacterSelect';
 import './ScriptPage.less';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  character: Character;
+  aigram: AigramState;
+  defaultCharacter: Character | null;
   shots: Shot[];
   onShotsChange: (updater: (prev: Shot[]) => Shot[]) => void;
   onGenerate: (enrichedShots: Shot[]) => void;
@@ -23,17 +26,16 @@ function makeShot(prompt = ''): Shot {
 
 // ── Prompt builders ───────────────────────────────────────────────────────────
 
-function buildPrompt(userPrompt: string, character: Character): string {
+function buildPrompt(userPrompt: string, character: Character | null): string {
   const parts: string[] = [];
-  if (character.avatar_describe) parts.push(character.avatar_describe);
-  if (character.style) parts.push(`${character.style} style`);
+  if (character?.avatar_describe) parts.push(character.avatar_describe);
+  if (character?.style) parts.push(`${character.style} style`);
   parts.push('cinematic film');
   parts.push(userPrompt);
   return parts.join(', ');
 }
 
-function buildEndPrompt(userPrompt: string, character: Character): string {
-  // Take first clause (scene) + last two action clauses → end state differs from start
+function buildEndPrompt(userPrompt: string, character: Character | null): string {
   const parts = userPrompt.split('，');
   const endPrompt = parts.length > 2
     ? [parts[0], ...parts.slice(-2)].join('，')
@@ -41,16 +43,20 @@ function buildEndPrompt(userPrompt: string, character: Character): string {
   return buildPrompt(endPrompt, character) + ', final moment';
 }
 
+// ── Resolve per-shot character ───────────────────────────────────────────────
+
+function resolveShotChar(shot: Shot, shots: Shot[], defaultChar: Character | null): Character | null {
+  return shot.character ?? shots[0]?.character ?? defaultChar;
+}
+
 // ── Frame state ───────────────────────────────────────────────────────────────
-// Single source of truth: phase + url live together.
-// Drama.tsx sees frame URLs only when "开拍" is pressed.
 
 type FramePhase = 'idle' | 'waiting' | 'generating' | 'downloading' | 'error';
 
 interface FrameData {
   phase: FramePhase;
-  wait: number;   // countdown seconds, relevant during 'waiting'
-  url?: string;   // set when API responds, cleared when prompt changes
+  wait: number;
+  url?: string;
 }
 
 interface ShotFrames { start: FrameData; end: FrameData; }
@@ -79,12 +85,18 @@ function btnContent(f: FrameData, isStart: boolean, cooldown: number): React.Rea
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ScriptPage({ character, shots, onShotsChange, onGenerate, onBack }: Props) {
-  const [showPresets, setShowPresets] = useState(false);
+export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsChange, onGenerate, onBack }: Props) {
   const [frames, setFrames] = useState<Record<string, ShotFrames>>({});
   const [cooldown, setCooldown] = useState(0);
+  const [charSelectFor, setCharSelectFor] = useState<string | null>(null);
 
   useEffect(() => subscribeCooldown(setCooldown), []);
+
+  // Build character list for selection modal
+  const { me, contacts } = aigram;
+  const allChars: Character[] = [];
+  if (me) allChars.push(me);
+  contacts.forEach(c => { if (c.telegram_id !== me?.telegram_id) allChars.push(c); });
 
   // ── Frame state helpers ────────────────────────────────────────────────────
 
@@ -104,6 +116,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     shotId: string,
     prompt: string,
     type: 'start' | 'end',
+    character: Character | null,
     signal: { cancelled: boolean },
   ) => {
     if (!prompt.trim() || signal.cancelled) return;
@@ -114,7 +127,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
     generateSceneImage(
       apiPrompt,
-      character.head_url,
+      character?.head_url || '',
       (wait) => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'waiting', wait }); },
       ()     => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'generating', wait: 0 }); },
       ()     => signal.cancelled,
@@ -127,7 +140,7 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
         patchFrame(shotId, type, ERROR);
       }
     });
-  }, [character, patchFrame]);
+  }, [patchFrame]);
 
   // Auto-generate start frames on mount and when template applied (IDs change)
   useEffect(() => {
@@ -137,7 +150,8 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
       .forEach(s => {
         const sig = { cancelled: false };
         signals.set(s.id, sig);
-        generateFrame(s.id, s.prompt, 'start', sig);
+        const char = resolveShotChar(s, shots, defaultCharacter);
+        generateFrame(s.id, s.prompt, 'start', char, sig);
       });
     return () => { signals.forEach(sig => { sig.cancelled = true; }); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,7 +161,6 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   const updatePrompt = (id: string, prompt: string) => {
     onShotsChange(prev => prev.map(s => s.id === id ? { ...s, prompt } : s));
-    // Keep existing frames; stale images remain visible until user re-generates
   };
 
   const addShot = () => {
@@ -159,10 +172,10 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
     setFrames(prev => { const n = { ...prev }; delete n[id]; return n; });
   };
 
-  const applyTemplate = (prompts: string[]) => {
-    onShotsChange(() => prompts.map(p => makeShot(p)));
-    setFrames({});
-    setShowPresets(false);
+  const handleCharPicked = (char: Character) => {
+    if (!charSelectFor) return;
+    onShotsChange(prev => prev.map(s => s.id === charSelectFor ? { ...s, character: char } : s));
+    setCharSelectFor(null);
   };
 
   // ── Upload ─────────────────────────────────────────────────────────────────
@@ -195,43 +208,42 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
 
   const canGenerate = shots.some(s => s.prompt.trim());
   const activeCount = shots.filter(s => s.prompt.trim()).length;
-  const initials = character.name.slice(0, 2).toUpperCase();
 
   return (
     <div className="ad-script">
       <div className="ad-script__header">
         <button className="ad-script__back" onPointerDown={onBack}>←</button>
-        <div className="ad-script__char">
-          <div className="ad-script__avatar">
-            {character.head_url
-              ? <img src={character.head_url} alt={character.name} draggable={false} />
-              : <span>{initials}</span>}
-          </div>
-          <span className="ad-script__char-name">{character.name}</span>
-        </div>
-        <button className="ad-script__preset-btn" onPointerDown={() => setShowPresets(v => !v)}>
-          模板
-        </button>
+        <span className="ad-script__title">剧本编辑</span>
       </div>
-
-      {showPresets && (
-        <div className="ad-templates">
-          {DRAMA_TEMPLATES.map(t => (
-            <div key={t.label} className="ad-template-card" onPointerDown={() => applyTemplate(t.shots)}>
-              <span className="ad-template-card__label">{t.label}</span>
-              <span className="ad-template-card__preview">{t.shots.join(' → ')}</span>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="ad-shots">
         {shots.map((shot, i) => {
           const f = sf(shot.id);
           const hasPrompt = shot.prompt.trim().length > 0;
+          const char = resolveShotChar(shot, shots, defaultCharacter);
+          const isInherited = !shot.character;
+          const charInitials = char?.name.slice(0, 2).toUpperCase() || '?';
+
           return (
             <div key={shot.id} className="ad-shot">
-              <div className="ad-shot__num">镜头 {i + 1}</div>
+              <div className="ad-shot__header-row">
+                <span className="ad-shot__num">镜头 {i + 1}</span>
+                <div
+                  className={`ad-shot__char-badge${isInherited ? ' ad-shot__char-badge--inherited' : ''}`}
+                  onPointerDown={() => setCharSelectFor(shot.id)}
+                >
+                  <div className="ad-shot__char-badge-avatar">
+                    {char?.head_url
+                      ? <img src={char.head_url} alt={char.name} draggable={false} />
+                      : <span>{charInitials}</span>}
+                  </div>
+                  <span className="ad-shot__char-badge-name">
+                    {char?.name || '选角色'}
+                  </span>
+                  {i === 0 && isInherited && <span className="ad-shot__char-badge-tag">默认</span>}
+                </div>
+              </div>
+
               <textarea
                 className="ad-shot__input"
                 value={shot.prompt}
@@ -287,7 +299,12 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
                       </label>
                       <button
                         className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
-                        onPointerDown={() => { if (!busy && cooldown === 0) generateFrame(shot.id, shot.prompt, type, { cancelled: false }); }}
+                        onPointerDown={() => {
+                          if (!busy && cooldown === 0) {
+                            const shotChar = resolveShotChar(shot, shots, defaultCharacter);
+                            generateFrame(shot.id, shot.prompt, type, shotChar, { cancelled: false });
+                          }
+                        }}
                         disabled={!hasPrompt || busy || cooldown > 0}
                       >
                         {btnContent(frame, isStart, cooldown)}
@@ -320,6 +337,19 @@ export default function ScriptPage({ character, shots, onShotsChange, onGenerate
           开拍！生成 {activeCount} 个镜头
         </button>
       </div>
+
+      {charSelectFor && allChars.length > 0 && (
+        <CharacterSelect
+          characters={allChars}
+          current={resolveShotChar(
+            shots.find(s => s.id === charSelectFor) ?? shots[0],
+            shots,
+            defaultCharacter,
+          )}
+          onPick={handleCharPicked}
+          onClose={() => setCharSelectFor(null)}
+        />
+      )}
     </div>
   );
 }
