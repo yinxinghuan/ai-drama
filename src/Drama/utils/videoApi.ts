@@ -1,6 +1,7 @@
-const WORKER = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
-const VIDEO_API = `${WORKER}/video`;
-const TASK_API  = `${WORKER}/video_task`;
+// GPU server supports CORS natively — call directly, skip Worker proxy (was causing 502/522)
+const GPU_SERVER = 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443';
+const VIDEO_API = `${GPU_SERVER}/video`;
+const TASK_API  = `${GPU_SERVER}/video_task`;
 
 const COOLDOWN_MS   = 100_000;  // between submissions (server rate limit)
 const POLL_INTERVAL = 6_000;    // 6s per poll = 10 queries/min max
