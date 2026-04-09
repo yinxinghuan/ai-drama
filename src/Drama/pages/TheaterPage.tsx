@@ -130,7 +130,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
           src={s.videoUrl}
           preload="auto"
           playsInline
-          onEnded={() => goTo(i + 1)}
+          onEnded={() => goTo(i + 1 < playable.length ? i + 1 : 0)}
         />
       ))}
 
