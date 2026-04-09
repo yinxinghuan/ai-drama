@@ -90,12 +90,13 @@ export default function Drama() {
    * Returns taskId. Does NOT poll — caller handles polling separately.
    */
   const submitShotJob = useCallback(async (shot: Shot, char: Character): Promise<string> => {
-    updateShot(shot.id, { status: 'imaging', error: undefined, taskId: undefined });
+    updateShot(shot.id, { error: undefined, taskId: undefined });
     const enhanced = await enhancePrompt(shot.prompt, char.head_url || undefined);
     const prompt = buildPrompt(enhanced, char);
 
     let startUrl = shot.startImageUrl;
     if (!startUrl) {
+      updateShot(shot.id, { status: 'imaging' });
       startUrl = await generateSceneImage(prompt, char.head_url);
     } else {
       // Preview frames skip rehost; rehost now for stable video access
