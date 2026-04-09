@@ -1,7 +1,6 @@
-// GPU server supports CORS natively — call directly, skip Worker proxy (was causing 502/522)
-const GPU_SERVER = 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443';
-const VIDEO_API = `${GPU_SERVER}/video`;
-const TASK_API  = `${GPU_SERVER}/video_task`;
+const WORKER = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev';
+const VIDEO_API = `${WORKER}/video`;
+const TASK_API  = `${WORKER}/video_task`;
 
 const COOLDOWN_MS     = 100_000;  // between submissions (server rate limit)
 const POLL_INITIAL    = 30_000;   // wait 30s before first poll (video needs time to generate)
@@ -44,17 +43,37 @@ export async function submitVideo(
   if (startImageUrl) params.image_url = startImageUrl;
   if (endImageUrl) params.end_image_url = endImageUrl;
 
-  const res = await fetch(VIDEO_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: '', params }),
-    signal: AbortSignal.timeout(30_000),
-  });
+  const body = JSON.stringify({ query: '', params });
 
-  if (!res.ok) throw new Error(`视频提交失败: ${res.status}`);
-  const data = await res.json() as { task_id?: string; Flag?: boolean; Log?: string };
-  if (!data.task_id) throw new Error(data.Log ?? '未获取到 task_id');
-  return data.task_id;
+  // Retry up to 3 times — Worker→GPU proxy can be flaky (502/522)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(VIDEO_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (res.ok) {
+        const data = await res.json() as { task_id?: string; Log?: string };
+        if (!data.task_id) throw new Error(data.Log ?? '未获取到 task_id');
+        return data.task_id;
+      }
+
+      // 502/522 from Worker proxy — retry after delay
+      if ((res.status === 502 || res.status === 522) && attempt < 2) {
+        await new Promise(r => setTimeout(r, 5_000));
+        continue;
+      }
+
+      throw new Error(`视频提交失败: ${res.status}`);
+    } catch (err) {
+      if (attempt >= 2) throw err;
+      await new Promise(r => setTimeout(r, 5_000));
+    }
+  }
+  throw new Error('视频提交失败: 重试次数已用尽');
 }
 
 /**
