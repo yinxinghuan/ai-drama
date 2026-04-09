@@ -155,21 +155,23 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
           <span className="ad-theater__counter">{current + 1} / {playable.length}</span>
         </div>
 
-        {/* Shot indicator — upper center */}
-        {shotIndicator !== null && (
-          <div className="ad-theater__indicator" key={shotIndicator}>
-            <span className="ad-theater__indicator-label">SCENE</span>
-            <div className="ad-theater__indicator-row">
-              <span className="ad-theater__indicator-num">{String(shotIndicator + 1).padStart(2, '0')}</span>
-              <span className="ad-theater__indicator-sep">/</span>
-              <span className="ad-theater__indicator-total">{String(playable.length).padStart(2, '0')}</span>
-            </div>
-            <div className="ad-theater__indicator-line" />
-          </div>
-        )}
+        {/* Spacer pushes bottom down */}
+        <div style={{ flex: 1 }} />
 
         {/* Bottom */}
         <div className="ad-theater__bottom">
+          {/* Shot indicator — above prompt */}
+          {shotIndicator !== null && (
+            <div className="ad-theater__indicator" key={shotIndicator}>
+              <span className="ad-theater__indicator-label">SCENE</span>
+              <div className="ad-theater__indicator-row">
+                <span className="ad-theater__indicator-num">{String(shotIndicator + 1).padStart(2, '0')}</span>
+                <span className="ad-theater__indicator-sep">/</span>
+                <span className="ad-theater__indicator-total">{String(playable.length).padStart(2, '0')}</span>
+              </div>
+              <div className="ad-theater__indicator-line" />
+            </div>
+          )}
           <p className="ad-theater__prompt">{shot?.prompt}</p>
           {/* Dots */}
           <div className="ad-theater__dots">
