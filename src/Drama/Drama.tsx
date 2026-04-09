@@ -16,8 +16,6 @@ function makeShot(prompt = ''): Shot {
 }
 
 const INITIAL_SHOTS = [
-  makeShot('开场，主角出现，镜头慢慢推进'),
-  makeShot(''),
   makeShot(''),
 ];
 
