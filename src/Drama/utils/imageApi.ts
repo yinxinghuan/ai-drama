@@ -38,7 +38,7 @@ export async function uploadImage(file: File): Promise<string> {
 }
 
 /** Rehost a temporary CDN URL to R2 so the video server can access it stably. */
-async function rehostImage(tempUrl: string): Promise<string> {
+export async function rehostImage(tempUrl: string): Promise<string> {
   if (import.meta.env.DEV) return tempUrl; // skip in dev
   const res = await fetch(REHOST_API, {
     method: 'POST',
@@ -100,6 +100,7 @@ export function generateSceneImage(
   onWaiting?: (remaining: number) => void,
   onStart?: () => void,
   isCancelled?: () => boolean,
+  skipRehost?: boolean,
 ): Promise<string> {
   // Reserve a position in the send queue
   let resolveReady!: () => void;
@@ -154,7 +155,7 @@ export function generateSceneImage(
     })
     .then(data => {
       if (data.code !== 200 || !data.url) throw new Error('生图失败，请重试');
-      return rehostImage(data.url);
+      return skipRehost ? data.url : rehostImage(data.url);
     })
   );
 }
