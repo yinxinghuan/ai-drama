@@ -81,30 +81,32 @@ export default function HomePage({
         ))}
       </div>
 
-      <div className="ad-home__grid">
-        <div className="ad-home__card" onClick={onFreeCreate}>
-          <img className="ad-home__card-img" src={freeCreateCover} alt="自由创作" draggable={false} />
-          <div className="ad-home__card-info">
-            <span className="ad-home__card-label">{t('home.freeCreate')}</span>
-            <span className="ad-home__card-desc">{t('home.freeCreateDesc')}</span>
-          </div>
-        </div>
-
-        {filtered.map(tmpl => (
-          <div
-            key={tmpl.id}
-            className="ad-home__card"
-            onClick={() => onSelectTemplate(tmpl)}
-          >
-            {tmpl.preview
-              ? <img className="ad-home__card-img" src={tmpl.preview} alt={tmpl.label} draggable={false} />
-              : <div className="ad-home__card-placeholder">{tmpl.label}</div>}
+      <div className="ad-home__scroll">
+        <div className="ad-home__grid">
+          <div className="ad-home__card" onClick={onFreeCreate}>
+            <img className="ad-home__card-img" src={freeCreateCover} alt="自由创作" draggable={false} />
             <div className="ad-home__card-info">
-              <span className="ad-home__card-label">{tmpl.label}</span>
-              <span className="ad-home__card-desc">{tmpl.shots[0]}</span>
+              <span className="ad-home__card-label">{t('home.freeCreate')}</span>
+              <span className="ad-home__card-desc">{t('home.freeCreateDesc')}</span>
             </div>
           </div>
-        ))}
+
+          {filtered.map(tmpl => (
+            <div
+              key={tmpl.id}
+              className="ad-home__card"
+              onClick={() => onSelectTemplate(tmpl)}
+            >
+              {tmpl.preview
+                ? <img className="ad-home__card-img" src={tmpl.preview} alt={tmpl.label} draggable={false} />
+                : <div className="ad-home__card-placeholder">{tmpl.label}</div>}
+              <div className="ad-home__card-info">
+                <span className="ad-home__card-label">{tmpl.label}</span>
+                <span className="ad-home__card-desc">{tmpl.shots[0]}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {showCharSelect && allChars.length > 0 && (
