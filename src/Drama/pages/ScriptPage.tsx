@@ -134,7 +134,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
       true, // skip rehost for preview — only needed at video submission time
     ).then(url => {
       if (signal.cancelled) return;
-      patchFrame(shotId, type, { phase: 'downloading', wait: 0, url });
+      patchFrame(shotId, type, { phase: 'idle', wait: 0, url });
     }).catch(err => {
       if (!signal.cancelled) {
         console.error('生图失败', err);
