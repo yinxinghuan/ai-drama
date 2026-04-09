@@ -153,17 +153,19 @@
   }
 }
 
-// ── Template grid (scrollable) ──────────────────
-.ad-home__grid {
+// ── Template scroll area ────────────────────────
+.ad-home__scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.ad-home__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   padding: 0 16px 24px;
-  align-content: start;
 }
 
 .ad-home__card {
