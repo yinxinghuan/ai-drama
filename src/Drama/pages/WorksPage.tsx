@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { t } from '../i18n';
 import type { Work } from '../types';
 import { loadWorksLocal, loadWorksRemote, deleteWork } from '../utils/works';
 import './WorksPage.less';
@@ -41,15 +42,15 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
     <div className="ad-works">
       <div className="ad-works__header">
         <button className="ad-works__back" onPointerDown={onBack}>←</button>
-        <span className="ad-works__title">我的作品</span>
+        <span className="ad-works__title">{t('app.myWorks')}</span>
       </div>
 
       {loading ? (
-        <div className="ad-works__loading">加载中…</div>
+        <div className="ad-works__loading">{t('works.loading')}</div>
       ) : works.length === 0 ? (
         <div className="ad-works__empty">
-          <p>还没有作品</p>
-          <p className="ad-works__empty-sub">生成第一部短剧吧</p>
+          <p>{t('works.empty')}</p>
+          <p className="ad-works__empty-sub">{t('works.emptyDesc')}</p>
         </div>
       ) : (
         <div className="ad-works__list">
@@ -82,10 +83,10 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
                   </div>
                   <span className="ad-work-card__meta">
                     {videoCount > 0
-                      ? <>{videoCount} 个镜头完成</>
-                      : <span className="ad-work-card__pending">生成中…</span>
+                      ? <>{videoCount} {t('works.shotsCompleted')}</>
+                      : <span className="ad-work-card__pending">{t('works.inProgress')}</span>
                     }
-                    {pendingCount > 0 && <span className="ad-work-card__pending"> · {pendingCount} 待完成</span>}
+                    {pendingCount > 0 && <span className="ad-work-card__pending"> · {pendingCount} {t('works.pending')}</span>}
                     {' · '}{formatDate(work.createdAt)}
                   </span>
 
@@ -93,7 +94,7 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
                     <button
                       className="ad-work-card__btn ad-work-card__btn--del"
                       onPointerDown={e => { e.stopPropagation(); handleDelete(work.id); }}
-                    >删除</button>
+                    >{t('works.delete')}</button>
                   </div>
                 </div>
               </div>

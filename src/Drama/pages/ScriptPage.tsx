@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import React from 'react';
+import { t } from '../i18n';
 import type { Character, Shot } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { SHOT_PRESETS } from '../utils/presets';
@@ -69,16 +70,16 @@ function isBusy(f: FrameData): boolean {
 }
 
 function btnContent(f: FrameData, isStart: boolean, cooldown: number): React.ReactNode {
-  if (f.phase === 'waiting')     return f.wait > 0 ? `${f.wait}s` : '即将生成…';
-  if (f.phase === 'generating')  return '生成中…';
-  if (f.phase === 'downloading') return '下载中…';
+  if (f.phase === 'waiting')     return f.wait > 0 ? `${f.wait}s` : t('script.aboutToGen');
+  if (f.phase === 'generating')  return t('script.generating');
+  if (f.phase === 'downloading') return t('script.downloading');
 
   const action = f.phase === 'error'
-    ? '生成失败，重试'
-    : (f.url ? '重新生成' : (isStart ? '生成首帧' : '+ 尾帧'));
+    ? t('script.genFailed')
+    : (f.url ? t('script.regen') : (isStart ? t('script.genStart') : t('script.genEnd')));
 
   if (cooldown > 0) {
-    return <>{action} <span className="ad-shot__frame-btn-cd">{cooldown}s 冷却中</span></>;
+    return <>{action} <span className="ad-shot__frame-btn-cd">{cooldown}s {t('script.cooldown')}</span></>;
   }
   return action;
 }
@@ -229,7 +230,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
     <div className="ad-script">
       <div className="ad-script__header">
         <button className="ad-script__back" onPointerDown={onBack}>←</button>
-        <span className="ad-script__title">剧本编辑</span>
+        <span className="ad-script__title">{t('script.title')}</span>
       </div>
 
       <div className="ad-shots">
@@ -243,7 +244,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
           return (
             <div key={shot.id} className="ad-shot">
               <div className="ad-shot__header-row">
-                <span className="ad-shot__num">镜头 {i + 1}</span>
+                <span className="ad-shot__num">{t('script.shot')} {i + 1}</span>
                 <div
                   className={`ad-shot__char-badge${isInherited ? ' ad-shot__char-badge--inherited' : ''}`}
                   onPointerDown={() => setCharSelectFor(shot.id)}
@@ -254,9 +255,9 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                       : <span>{charInitials}</span>}
                   </div>
                   <span className="ad-shot__char-badge-name">
-                    {char?.name || '选角色'}
+                    {char?.name || t('script.selectChar')}
                   </span>
-                  {i === 0 && isInherited && <span className="ad-shot__char-badge-tag">默认</span>}
+                  {i === 0 && isInherited && <span className="ad-shot__char-badge-tag">{t('script.default')}</span>}
                 </div>
                 {shots.length > 1 && (
                   <button className="ad-shot__remove" onPointerDown={() => removeShot(shot.id)}>✕</button>
@@ -267,7 +268,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                 className="ad-shot__input"
                 value={shot.prompt}
                 onChange={e => updatePrompt(shot.id, e.target.value)}
-                placeholder={suggestingId === shot.id ? 'AI 正在续写…' : '描述这个镜头的场景…'}
+                placeholder={suggestingId === shot.id ? t('script.aiSuggesting') : t('script.placeholder')}
                 rows={2}
               />
               <div className="ad-shot__hints">
@@ -303,17 +304,17 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                                 key={frame.url}
                                 className="ad-shot__frame-img"
                                 src={frame.url}
-                                alt={isStart ? '首帧' : '尾帧'}
+                                alt={isStart ? t('script.startFrame') : t('script.endFrame')}
                                 draggable={false}
                                 onLoad={() => patchFrame(shot.id, type, { phase: 'idle' })}
                                 onError={() => patchFrame(shot.id, type, ERROR)}
                               />
-                              <span className="ad-shot__frame-replace">换图</span>
+                              <span className="ad-shot__frame-replace">{t('script.replace')}</span>
                             </>
                           : <div className={`ad-shot__frame-empty ${!isStart ? 'ad-shot__frame-empty--dim' : ''} ${busy ? 'ad-shot__frame-empty--loading' : ''}`}>
                               {busy
                                 ? <span className="ad-shot__frame-spinner" />
-                                : <><span className="ad-shot__frame-upload-icon">＋</span><span>{isStart ? '首帧' : '尾帧'}</span><span className="ad-shot__frame-upload-hint">点击上传</span></>
+                                : <><span className="ad-shot__frame-upload-icon">＋</span><span>{isStart ? t('script.startFrame') : t('script.endFrame')}</span><span className="ad-shot__frame-upload-hint">{t('script.upload')}</span></>
                               }
                             </div>
                         }
@@ -335,7 +336,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                           className="ad-shot__frame-btn ad-shot__frame-btn--use-prev"
                           onPointerDown={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
                         >
-                          ← 用上镜尾帧
+                          {t('script.usePrevEnd')}
                         </button>
                       )}
                     </div>
@@ -349,7 +350,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
 
         {shots.length < 8 && (
           <button className="ad-add-shot" onPointerDown={addShot}>
-            + 添加镜头（{shots.length}/8）
+            {t('script.addShot')}（{shots.length}/8）
           </button>
         )}
       </div>
@@ -360,7 +361,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
           onPointerDown={handleGenerate}
           disabled={!canGenerate}
         >
-          开拍！生成 {activeCount} 个镜头
+          {t('script.go')} {activeCount} {t('script.shots')}
         </button>
       </div>
 

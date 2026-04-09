@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { t } from '../i18n';
 import type { Shot } from '../types';
 import './GeneratingPage.less';
 
@@ -43,16 +44,16 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
   return (
     <div className="ad-gen">
       <div className="ad-gen__header">
-        <button className="ad-gen__back" onPointerDown={onBack}>&larr; 返回</button>
+        <button className="ad-gen__back" onPointerDown={onBack}>&larr;</button>
       </div>
 
       <div className="ad-gen__top">
         <div className="ad-gen__icon">🎬</div>
-        <h2 className="ad-gen__title">{allSettled ? '拍摄完成！' : isGenerating ? '正在拍摄…' : '镜头总览'}</h2>
+        <h2 className="ad-gen__title">{allSettled ? t('gen.done') : isGenerating ? t('gen.filming') : t('gen.overview')}</h2>
         {isGenerating && (
           <>
-            <p className="ad-gen__sub">每个镜头约需 2-3 分钟</p>
-            <p className="ad-gen__tip">生成完成后可直接预览，也可先离开稍后回来查看</p>
+            <p className="ad-gen__sub">{t('gen.eta')}</p>
+            <p className="ad-gen__tip">{t('gen.tip')}</p>
           </>
         )}
       </div>
@@ -81,15 +82,15 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
             ) : null}
 
             <div className="ad-gen__shot-body">
-              <div className="ad-gen__shot-num">镜头 {i + 1}</div>
+              <div className="ad-gen__shot-num">{t('script.shot')} {i + 1}</div>
               <div className="ad-gen__shot-prompt">{shot.prompt}</div>
             </div>
 
             <div className="ad-gen__shot-status">
               {shot.status === 'idle'      && <span className="ad-gen__dot ad-gen__dot--wait" />}
-              {shot.status === 'imaging'   && <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">生图中</span></>}
-              {shot.status === 'waiting'   && <><span className="ad-gen__cooldown">{shot.waitSeconds ?? 0}s</span><span className="ad-gen__step-label">冷却中</span></>}
-              {shot.status === 'generating'&& <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">生成视频</span></>}
+              {shot.status === 'imaging'   && <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">{t('gen.imaging')}</span></>}
+              {shot.status === 'waiting'   && <><span className="ad-gen__cooldown">{shot.waitSeconds ?? 0}s</span><span className="ad-gen__step-label">{t('gen.cooldown')}</span></>}
+              {shot.status === 'generating'&& <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">{t('gen.videoGen')}</span></>}
               {shot.status === 'done'      && <span className="ad-gen__check">✓</span>}
               {shot.status === 'error'     && (
                 <div className="ad-gen__shot-err-wrap">
@@ -99,7 +100,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
                     onPointerDown={() => onRegen(shot.id)}
                     disabled={isGenerating}
                   >
-                    重拍
+                    {t('gen.regen')}
                   </button>
                 </div>
               )}
@@ -113,7 +114,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
         {/* Continue button — when there are remaining shots and nothing generating */}
         {!isGenerating && hasRemaining && (
           <button className="ad-gen__continue-btn" onPointerDown={onContinue}>
-            继续生成（{active.filter(s => s.status === 'idle' || s.status === 'error').length} 个镜头）
+            {t('gen.continue')}（{active.filter(s => s.status === 'idle' || s.status === 'error').length} {t('script.shots')}）
           </button>
         )}
 
@@ -125,13 +126,13 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
             disabled={!allPreloaded}
           >
             {allPreloaded
-              ? `▶ 预览（${successShots.length} 个镜头）`
-              : `加载中 ${loadedCount} / ${successShots.length}…`}
+              ? `▶ ${t('gen.preview')}（${successShots.length} ${t('script.shots')}）`
+              : `${t('gen.loading')} ${loadedCount} / ${successShots.length}…`}
           </button>
         )}
 
         {allSettled && successShots.length === 0 && (
-          <p className="ad-gen__all-fail">所有镜头均失败，请重拍</p>
+          <p className="ad-gen__all-fail">{t('gen.allFailed')}</p>
         )}
       </div>
 

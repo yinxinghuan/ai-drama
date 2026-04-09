@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../i18n';
 import type { Character, DramaTemplate, TemplateCategory } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { DRAMA_TEMPLATES, TEMPLATE_CATEGORIES } from '../utils/presets';
@@ -46,14 +47,14 @@ export default function HomePage({
       {isGenerating && (
         <div className="ad-home__gen-banner" onPointerDown={onResumeGenerating}>
           <span className="ad-home__gen-spinner" />
-          <span>拍摄进行中… 点击查看进度</span>
+          <span>{t('home.genBanner')}</span>
         </div>
       )}
 
       <div className="ad-home__header">
         <img src="/ai-drama/img/aigram.svg" className="ad-home__logo" alt="aigram" />
-        <span className="ad-home__title">AI 短剧导演</span>
-        <button className="ad-home__works-btn" onPointerDown={onOpenWorks}>我的作品</button>
+        <span className="ad-home__title">{t('app.title')}</span>
+        <button className="ad-home__works-btn" onPointerDown={onOpenWorks}>{t('app.myWorks')}</button>
       </div>
 
       <div className="ad-home__char-row" onPointerDown={() => setShowCharSelect(true)}>
@@ -63,9 +64,9 @@ export default function HomePage({
             : <span>{charInitials}</span>}
         </div>
         <span className="ad-home__char-name">
-          {defaultCharacter?.name || '选择角色'}
+          {defaultCharacter?.name || t('home.selectChar')}
         </span>
-        <span className="ad-home__char-hint">默认角色 ›</span>
+        <span className="ad-home__char-hint">{t('home.defaultChar')}</span>
       </div>
 
       <div className="ad-home__tabs">
@@ -84,8 +85,8 @@ export default function HomePage({
         <div className="ad-home__card" onPointerDown={onFreeCreate}>
           <img className="ad-home__card-img" src={freeCreateCover} alt="自由创作" draggable={false} />
           <div className="ad-home__card-info">
-            <span className="ad-home__card-label">✦ 自由创作</span>
-            <span className="ad-home__card-desc">从零开始，写你自己的剧本</span>
+            <span className="ad-home__card-label">{t('home.freeCreate')}</span>
+            <span className="ad-home__card-desc">{t('home.freeCreateDesc')}</span>
           </div>
         </div>
 
