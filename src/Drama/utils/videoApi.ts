@@ -3,9 +3,10 @@ const GPU_SERVER = 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443';
 const VIDEO_API = `${GPU_SERVER}/video`;
 const TASK_API  = `${GPU_SERVER}/video_task`;
 
-const COOLDOWN_MS   = 100_000;  // between submissions (server rate limit)
-const POLL_INTERVAL = 6_000;    // 6s per poll = 10 queries/min max
-const POLL_TIMEOUT  = 600_000;  // 10 min total
+const COOLDOWN_MS     = 100_000;  // between submissions (server rate limit)
+const POLL_INITIAL    = 30_000;   // wait 30s before first poll (video needs time to generate)
+const POLL_INTERVAL   = 7_000;    // ~8.5 req/min, safely under 10/min limit
+const POLL_TIMEOUT    = 600_000;  // 10 min total
 
 let lastVideoCallTime = 0;
 
@@ -63,10 +64,11 @@ export async function submitVideo(
 export async function pollVideoTask(taskId: string): Promise<string> {
   const deadline = Date.now() + POLL_TIMEOUT;
 
-  while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, POLL_INTERVAL));
+  // Wait 30s before first poll — video generation needs time
+  await new Promise(r => setTimeout(r, POLL_INITIAL));
 
-    let data: { status?: string; url?: string; Flag?: boolean; File?: string; Log?: string };
+  while (Date.now() < deadline) {
+    let data: { status?: string; url?: string; log?: string; Log?: string };
     try {
       const res = await fetch(TASK_API, {
         method: 'POST',
@@ -76,24 +78,23 @@ export async function pollVideoTask(taskId: string): Promise<string> {
       });
       if (!res.ok) {
         if (res.status === 429) await new Promise(r => setTimeout(r, 10_000));
+        else await new Promise(r => setTimeout(r, POLL_INTERVAL));
         continue;
       }
       data = await res.json();
     } catch {
-      continue; // network hiccup, retry
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
+      continue;
     }
 
-    // New format: { status: "success", url: "..." }
     if (data.status === 'success' && data.url) {
       return data.url;
     }
-    // Legacy format: { Flag: true, File: "..." }
-    if (data.Flag && data.File && typeof data.File === 'string') {
-      return data.File;
+    if (data.status === 'failed') {
+      throw new Error(data.log ?? data.Log ?? '视频生成失败');
     }
-
-    if (data.status === 'failed') throw new Error(data.Log ?? '视频生成失败');
-    // status pending/processing → keep polling
+    // status processing → wait then poll again
+    await new Promise(r => setTimeout(r, POLL_INTERVAL));
   }
 
   throw new Error('视频生成超时（10分钟）');
