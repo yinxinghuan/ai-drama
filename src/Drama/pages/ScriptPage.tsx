@@ -309,12 +309,12 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                       <button
                         className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
                         onPointerDown={() => {
-                          if (!busy && cooldown === 0) {
+                          if (!busy) {
                             const shotChar = resolveShotChar(shot, shots, defaultCharacter);
                             generateFrame(shot.id, shot.prompt, type, shotChar, { cancelled: false });
                           }
                         }}
-                        disabled={!hasPrompt || busy || cooldown > 0}
+                        disabled={!hasPrompt || busy}
                       >
                         {btnContent(frame, isStart, cooldown)}
                       </button>
