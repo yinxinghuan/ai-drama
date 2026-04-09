@@ -272,6 +272,8 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                   const busy = isBusy(frame);
                   const isStart = type === 'start';
                   const inputId = `upload-${shot.id}-${type}`;
+                  // Check if previous shot has an end frame (for "use prev end frame" button)
+                  const prevEndUrl = isStart && i > 0 ? sf(shots[i - 1].id).end.url : undefined;
                   return (
                     <div key={type} className="ad-shot__frame">
                       <input
@@ -316,6 +318,14 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                       >
                         {btnContent(frame, isStart, cooldown)}
                       </button>
+                      {prevEndUrl && !frame.url && !busy && (
+                        <button
+                          className="ad-shot__frame-btn ad-shot__frame-btn--use-prev"
+                          onPointerDown={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
+                        >
+                          ← 用上镜尾帧
+                        </button>
+                      )}
                     </div>
                   );
                 })}
