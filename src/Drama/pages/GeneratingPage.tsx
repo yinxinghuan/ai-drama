@@ -52,7 +52,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
         {isGenerating && (
           <>
             <p className="ad-gen__sub">每个镜头约需 2-3 分钟</p>
-            <p className="ad-gen__tip">请保持页面打开，生成完成后可直接预览<br />⚠️ 离开或关闭页面会中断生成</p>
+            <p className="ad-gen__tip">生成完成后可直接预览，也可先离开稍后回来查看</p>
           </>
         )}
       </div>
