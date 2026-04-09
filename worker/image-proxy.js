@@ -125,6 +125,51 @@ export default {
       }
     }
 
+    // ── /end-frame: generate a differentiated end-frame prompt ────────────────
+    if (url.pathname === '/end-frame') {
+      try {
+        const { scene, character } = await request.json();
+        if (!scene) return jsonResp({ error: 'scene required' }, 400);
+
+        const charDesc = character || '';
+        const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${env.GLM_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'glm-4.1v-thinking-flash',
+            stream: false,
+            do_sample: true,
+            temperature: 0.9,
+            top_p: 0.7,
+            messages: [{
+              role: 'user',
+              content: `You are a cinematography expert. Given a scene description for a video's OPENING frame, create an English image prompt for the ENDING frame of the same shot.
+
+CRITICAL RULES:
+- The ending must show significant visual CHANGE from the opening (different pose, position, camera angle, lighting, or environment state)
+- Think about what happens at the END of this scene — the character has moved, the light has shifted, the mood has evolved
+- Keep the same setting/location but show TIME PASSING or ACTION COMPLETING
+- Output ONLY the English image prompt, no explanation
+
+${charDesc ? `Character: ${charDesc}` : ''}
+Opening scene: ${scene}
+
+Ending frame prompt:`,
+            }],
+          }),
+        });
+        if (!res.ok) throw new Error(`GLM API error: ${res.status}`);
+        const data = await res.json();
+        let result = data.choices?.[0]?.message?.content ?? '';
+        if (result.includes('<|begin_of_box|>')) {
+          result = result.split('<|begin_of_box|>').pop().split('<|end_of_box|>')[0];
+        }
+        return jsonResp({ prompt: result.trim() });
+      } catch (e) {
+        return jsonResp({ prompt: '' });
+      }
+    }
+
     // ── /suggest: AI continuation of shot script ─────────────────────────────
     if (url.pathname === '/suggest') {
       try {
