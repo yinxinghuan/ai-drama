@@ -3,6 +3,7 @@ import type { Character, DramaTemplate, TemplateCategory } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { DRAMA_TEMPLATES, TEMPLATE_CATEGORIES } from '../utils/presets';
 import CharacterSelect from '../components/CharacterSelect';
+import freeCreateCover from '../img/templates/free_create.jpg';
 import './HomePage.less';
 
 interface Props {
@@ -80,6 +81,14 @@ export default function HomePage({
       </div>
 
       <div className="ad-home__grid">
+        <div className="ad-home__card" onPointerDown={onFreeCreate}>
+          <img className="ad-home__card-img" src={freeCreateCover} alt="自由创作" draggable={false} />
+          <div className="ad-home__card-info">
+            <span className="ad-home__card-label">✦ 自由创作</span>
+            <span className="ad-home__card-desc">从零开始，写你自己的剧本</span>
+          </div>
+        </div>
+
         {filtered.map(tmpl => (
           <div
             key={tmpl.id}
@@ -95,17 +104,6 @@ export default function HomePage({
             </div>
           </div>
         ))}
-
-        <div className="ad-home__card ad-home__card--free" onPointerDown={onFreeCreate}>
-          <div className="ad-home__card-placeholder ad-home__card-placeholder--free">
-            <span className="ad-home__free-icon">✦</span>
-            <span>自由创作</span>
-          </div>
-          <div className="ad-home__card-info">
-            <span className="ad-home__card-label">✦ 自由创作</span>
-            <span className="ad-home__card-desc">从零开始，写你自己的剧本</span>
-          </div>
-        </div>
       </div>
 
       {showCharSelect && allChars.length > 0 && (
