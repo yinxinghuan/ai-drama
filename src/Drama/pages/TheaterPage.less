@@ -39,40 +39,61 @@
   }
 }
 
-// ── Shot number indicator ─────────────────────────────────────────────────
+// ── Shot number indicator (cinematic) ─────────────────────────────────────
 .ad-theater__indicator {
-  position: absolute;
-  inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  z-index: 20;
+  padding-top: 15vh;
   pointer-events: none;
-  animation: ad-indicator-fade 1.5s ease forwards;
+  animation: ad-indicator-in 0.4s ease-out;
+}
+
+.ad-theater__indicator-label {
+  font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 4px;
+}
+
+.ad-theater__indicator-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .ad-theater__indicator-num {
-  font-size: 72px;
-  font-weight: 900;
+  font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 64px;
+  font-weight: 200;
   color: #fff;
   line-height: 1;
-  text-shadow: 0 4px 24px rgba(0,0,0,0.6);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+
+.ad-theater__indicator-sep {
+  font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 200;
+  color: rgba(255,255,255,0.3);
+  margin: 0 2px;
 }
 
 .ad-theater__indicator-total {
-  font-size: 24px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.5);
-  align-self: flex-end;
-  padding-bottom: 12px;
+  font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: -0.01em;
 }
 
-@keyframes ad-indicator-fade {
-  0%   { opacity: 1; }
-  60%  { opacity: 1; }
-  100% { opacity: 0; }
+@keyframes ad-indicator-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 // ── Overlay controls ──────────────────────────────────────────────────────
