@@ -158,6 +158,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
               <span className="ad-theater__indicator-sep">/</span>
               <span className="ad-theater__indicator-total">{String(playable.length).padStart(2, '0')}</span>
             </div>
+            <div className="ad-theater__indicator-line" />
           </div>
         )}
 
