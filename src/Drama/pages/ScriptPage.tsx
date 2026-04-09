@@ -143,21 +143,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
     });
   }, [patchFrame]);
 
-  // Auto-generate start frames when shots change AND default character is ready
-  useEffect(() => {
-    if (!defaultCharacter) return; // wait for character to load
-    const signals = new Map<string, { cancelled: boolean }>();
-    shots
-      .filter(s => s.prompt.trim() && !frames[s.id]?.start.url)
-      .forEach(s => {
-        const sig = { cancelled: false };
-        signals.set(s.id, sig);
-        const char = resolveShotChar(s, shots, defaultCharacter);
-        generateFrame(s.id, s.prompt, 'start', char, sig);
-      });
-    return () => { signals.forEach(sig => { sig.cancelled = true; }); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shots.map(s => s.id).join(','), defaultCharacter?.telegram_id]);
+  // No auto-generation — user must manually click "生成首帧" per shot
 
   // ── Shot mutations ─────────────────────────────────────────────────────────
 
