@@ -3,7 +3,7 @@ import React from 'react';
 import type { Character, Shot } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { SHOT_PRESETS } from '../utils/presets';
-import { generateSceneImage, subscribeCooldown, uploadImage, suggestNextShot } from '../utils/imageApi';
+import { generateSceneImage, subscribeCooldown, uploadImage, suggestNextShot, generateEndFramePrompt } from '../utils/imageApi';
 import CharacterSelect from '../components/CharacterSelect';
 import './ScriptPage.less';
 
@@ -112,7 +112,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
 
   // ── Generation ─────────────────────────────────────────────────────────────
 
-  const generateFrame = useCallback((
+  const generateFrame = useCallback(async (
     shotId: string,
     prompt: string,
     type: 'start' | 'end',
@@ -121,13 +121,26 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
   ) => {
     if (!prompt.trim() || signal.cancelled) return;
 
-    const apiPrompt = type === 'end'
-      ? buildEndPrompt(prompt, character)
-      : buildPrompt(prompt, character);
+    let apiPrompt: string;
+    let refUrl: string;
+
+    if (type === 'end') {
+      // Use AI to generate a differentiated end-frame prompt
+      patchFrame(shotId, type, { phase: 'generating', wait: 0 });
+      const aiPrompt = await generateEndFramePrompt(prompt, character?.avatar_describe);
+      if (signal.cancelled) return;
+      // Use AI prompt if available, otherwise fall back to simple builder
+      apiPrompt = aiPrompt || buildEndPrompt(prompt, character);
+      // Don't use character ref image for end frame — let prompt drive the difference
+      refUrl = '';
+    } else {
+      apiPrompt = buildPrompt(prompt, character);
+      refUrl = character?.head_url || '';
+    }
 
     generateSceneImage(
       apiPrompt,
-      character?.head_url || '',
+      refUrl,
       (wait) => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'waiting', wait }); },
       ()     => { if (!signal.cancelled) patchFrame(shotId, type, { phase: 'generating', wait: 0 }); },
       ()     => signal.cancelled,
