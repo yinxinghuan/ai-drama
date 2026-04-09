@@ -23,7 +23,7 @@ export interface Shot {
 
 export type Phase = 'home' | 'script' | 'generating' | 'theater' | 'works';
 
-export type TemplateCategory = 'all' | 'city' | 'romance' | 'youth' | 'travel' | 'mood' | 'action' | 'mystery' | 'fantasy' | 'retro';
+export type TemplateCategory = 'all' | 'life' | 'emotion' | 'journey' | 'genre';
 
 export interface DramaTemplate {
   id: string;

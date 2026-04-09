@@ -36,15 +36,10 @@ export const SHOT_PRESETS = [
 
 export const TEMPLATE_CATEGORIES: { key: TemplateCategory; label: string }[] = [
   { key: 'all',     label: '全部' },
-  { key: 'city',    label: '都市' },
-  { key: 'romance', label: '爱情' },
-  { key: 'youth',   label: '青春' },
-  { key: 'travel',  label: '旅行' },
-  { key: 'mood',    label: '情绪' },
-  { key: 'action',  label: '高光' },
-  { key: 'mystery', label: '悬疑' },
-  { key: 'fantasy', label: '奇幻' },
-  { key: 'retro',   label: '复古' },
+  { key: 'life',    label: '生活' },
+  { key: 'emotion', label: '情感' },
+  { key: 'journey', label: '旅途' },
+  { key: 'genre',   label: '风格片' },
 ];
 
 export const DRAMA_TEMPLATES: DramaTemplate[] = [
@@ -52,7 +47,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'city_hustle',
     label: '💼 都市奋斗',
-    category: 'city',
+    category: 'life',
     preview: prevCityHustle,
     shots: [
       '清晨六点，闹钟响起，主角睁开眼，翻身看了一眼窗外还没亮的天，深吸一口气，从床上坐起',
@@ -64,7 +59,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'midnight_diner',
     label: '🍜 深夜食堂',
-    category: 'city',
+    category: 'life',
     preview: prevMidnightDiner,
     shots: [
       '凌晨一点，雨后的小巷弄，霓虹招牌在湿漉漉的地面上投下彩色倒影，主角推开一扇冒着热气的小店门帘',
@@ -78,7 +73,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'city_romance',
     label: '💘 城市爱情',
-    category: 'romance',
+    category: 'emotion',
     preview: prevCityRomance,
     shots: [
       '午后的咖啡馆，阳光透过落地窗照进来，主角推门进入，铃铛叮地一声，隔着错落的人群和咖啡机的蒸汽，与对面的人四目相对，时间仿佛慢了下来',
@@ -89,7 +84,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'letter_never_sent',
     label: '💌 寄不出的信',
-    category: 'romance',
+    category: 'emotion',
     preview: prevLetterNeverSent,
     shots: [
       '午后书房，阳光照在桌面上，主角坐在老旧的木桌前，手里握着钢笔，面前摊开一张信纸，写了几行又停下，抬头望向窗外发呆',
@@ -103,7 +98,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'youth_confession',
     label: '🌅 青春告白',
-    category: 'youth',
+    category: 'emotion',
     preview: prevYouthConfession,
     shots: [
       '放学后的操场，夕阳把跑道染成橘红色，主角从远处向镜头跑来，跑得气喘吁吁，在镜头前急停，弯腰撑着膝盖大口喘气',
@@ -116,7 +111,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'solo_journey',
     label: '🗺️ 独自出发',
-    category: 'travel',
+    category: 'journey',
     preview: prevSoloJourney,
     shots: [
       '凌晨五点，天还没完全亮，主角轻轻关上家门，拖着行李箱走下楼梯，在大门口停了一秒，回头看了一眼楼上还亮着的那盏灯',
@@ -128,7 +123,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'last_train',
     label: '🚃 末班列车',
-    category: 'travel',
+    category: 'journey',
     preview: prevLastTrain,
     shots: [
       '昏黄灯光下的老式火车站台，主角独自坐在长椅上，行李箱靠在脚边，抬头看着站台上方古旧的时刻表，指针缓缓移动',
@@ -142,7 +137,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'heavy_heart',
     label: '🌧️ 心事重重',
-    category: 'mood',
+    category: 'emotion',
     preview: prevHeavyHeart,
     shots: [
       '雨天的公寓里，主角站在落地玻璃窗前，指尖沿着玻璃上的雨痕缓缓滑下，窗外是灰蒙蒙的城市天际线',
@@ -155,7 +150,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'spotlight',
     label: '🎉 高光时刻',
-    category: 'action',
+    category: 'life',
     preview: prevSpotlight,
     shots: [
       '幕布缓缓拉开，主角从舞台侧面走出，一束聚光灯从头顶打下来，照亮整个人，主角停在舞台正中央，面对黑暗中的观众席',
@@ -168,7 +163,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'noir_alley',
     label: '🔍 暗巷追踪',
-    category: 'mystery',
+    category: 'genre',
     preview: prevNoirAlley,
     shots: [
       '深夜的老城区，路灯只亮了一半，主角竖起风衣领子，沿着湿漉漉的石板路快步走进一条窄巷，墙上的影子被拉得又长又扭曲',
@@ -182,7 +177,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'ghibli_wind',
     label: '🌿 风之旅人',
-    category: 'fantasy',
+    category: 'genre',
     preview: prevGhibliWind,
     shots: [
       '辽阔的翠绿山丘上，风吹过齐腰的草浪，主角站在山顶俯瞰远方连绵的云海，斗篷在风中猎猎作响，手里握着一根古旧的木杖',
@@ -196,7 +191,7 @@ export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
     id: 'silent_film',
     label: '🎬 默片时代',
-    category: 'retro',
+    category: 'genre',
     preview: prevSilentFilm,
     shots: [
       '黑白画面，老式剧院门口，主角穿着礼帽和长风衣，站在旋转门前整理袖口，画面有轻微的胶片颗粒和竖条纹抖动',
