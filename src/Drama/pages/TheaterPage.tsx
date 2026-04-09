@@ -54,11 +54,17 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
     }, 4000);
   }, []);
 
-  // Show on first render
+  // Delay first indicator until video is actually playing
+  const firstShown = useRef(false);
   useEffect(() => {
-    showAll(0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const v = videoRefs.current[0];
+    if (!v || firstShown.current) return;
+    const onPlay = () => { firstShown.current = true; showAll(0); };
+    // If already playing (autoplay succeeded)
+    if (!v.paused && v.currentTime > 0) { onPlay(); return; }
+    v.addEventListener('playing', onPlay, { once: true });
+    return () => v.removeEventListener('playing', onPlay);
+  });
 
   // ── Navigation ───────────────────────────────────────────────────────────
   const goTo = useCallback((idx: number) => {
