@@ -4,13 +4,17 @@ import './TheaterPage.less';
 
 interface Props {
   shots: Shot[];
-  character: Character;
+  defaultCharacter: Character | null;
   onBack: () => void;
   onRestart: () => void;
   onRegenShot: (shotId: string) => void;
 }
 
-export default function TheaterPage({ shots, character, onBack, onRestart, onRegenShot }: Props) {
+function resolveChar(shot: Shot, shots: Shot[], defaultChar: Character | null): Character | null {
+  return shot.character ?? shots[0]?.character ?? defaultChar;
+}
+
+export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart, onRegenShot }: Props) {
   const playable = shots.filter(s => s.status === 'done' && s.videoUrl);
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
@@ -85,14 +89,19 @@ export default function TheaterPage({ shots, character, onBack, onRestart, onReg
         {/* Top */}
         <div className="ad-theater__top">
           <button className="ad-theater__back" onPointerDown={onBack}>←</button>
-          <div className="ad-theater__char">
-            <div className="ad-theater__avatar">
-              {character.head_url
-                ? <img src={character.head_url} alt={character.name} draggable={false} />
-                : <span>{character.name.slice(0, 2)}</span>}
-            </div>
-            <span>{character.name}</span>
-          </div>
+          {(() => {
+            const ch = shot ? resolveChar(shot, shots, defaultCharacter) : null;
+            return ch ? (
+              <div className="ad-theater__char">
+                <div className="ad-theater__avatar">
+                  {ch.head_url
+                    ? <img src={ch.head_url} alt={ch.name} draggable={false} />
+                    : <span>{ch.name.slice(0, 2)}</span>}
+                </div>
+                <span>{ch.name}</span>
+              </div>
+            ) : null;
+          })()}
           <span className="ad-theater__counter">{current + 1} / {playable.length}</span>
         </div>
 

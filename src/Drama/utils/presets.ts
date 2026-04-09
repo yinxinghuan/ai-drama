@@ -1,3 +1,12 @@
+import type { DramaTemplate, TemplateCategory } from '../types';
+
+import prevCityHustle from '../img/templates/city_hustle.jpg';
+import prevCityRomance from '../img/templates/city_romance.jpg';
+import prevYouthConfession from '../img/templates/youth_confession.jpg';
+import prevSoloJourney from '../img/templates/solo_journey.jpg';
+import prevHeavyHeart from '../img/templates/heavy_heart.jpg';
+import prevSpotlight from '../img/templates/spotlight.jpg';
+
 export const SHOT_PRESETS = [
   // 开场
   '清晨，主角从床边站起，走向窗边，望向窗外晨光',
@@ -19,9 +28,22 @@ export const SHOT_PRESETS = [
   '主角背对镜头，站在路口，风吹发丝，缓缓转身',
 ];
 
-export const DRAMA_TEMPLATES = [
+export const TEMPLATE_CATEGORIES: { key: TemplateCategory; label: string }[] = [
+  { key: 'all',     label: '全部' },
+  { key: 'city',    label: '都市' },
+  { key: 'romance', label: '爱情' },
+  { key: 'youth',   label: '青春' },
+  { key: 'travel',  label: '旅行' },
+  { key: 'mood',    label: '情绪' },
+  { key: 'action',  label: '高光' },
+];
+
+export const DRAMA_TEMPLATES: DramaTemplate[] = [
   {
+    id: 'city_hustle',
     label: '💼 都市奋斗',
+    category: 'city',
+    preview: prevCityHustle,
     shots: [
       '清晨，主角背起背包，走出家门，大步流星',
       '深夜，主角在空荡荡的办公室独自加班，站起身走向窗边，望向城市灯火',
@@ -29,7 +51,10 @@ export const DRAMA_TEMPLATES = [
     ],
   },
   {
+    id: 'city_romance',
     label: '💘 城市爱情',
+    category: 'romance',
+    preview: prevCityRomance,
     shots: [
       '咖啡馆内，主角推门而入，隔着人群四目相对，停在门口',
       '雨夜街头，两人共撑一把伞，并肩走在路灯下',
@@ -37,7 +62,10 @@ export const DRAMA_TEMPLATES = [
     ],
   },
   {
+    id: 'youth_confession',
     label: '🌅 青春告白',
+    category: 'youth',
+    preview: prevYouthConfession,
     shots: [
       '操场，主角从远处向镜头跑来，在镜头前停下，大口喘气',
       '走廊，主角鼓足勇气，转过身，开口说话',
@@ -45,7 +73,10 @@ export const DRAMA_TEMPLATES = [
     ],
   },
   {
+    id: 'solo_journey',
     label: '🗺️ 独自出发',
+    category: 'travel',
+    preview: prevSoloJourney,
     shots: [
       '凌晨，主角拖着行李箱，走出大门，回头看了一眼',
       '列车车窗旁，主角靠着玻璃，看着窗外飞速掠过的风景',
@@ -53,7 +84,10 @@ export const DRAMA_TEMPLATES = [
     ],
   },
   {
+    id: 'heavy_heart',
     label: '🌧️ 心事重重',
+    category: 'mood',
+    preview: prevHeavyHeart,
     shots: [
       '雨天，主角站在玻璃窗前，指尖划过水痕，望向灰色街道',
       '便利店，主角拿着热饮独自坐在角落，出神地盯着窗外',
@@ -61,7 +95,10 @@ export const DRAMA_TEMPLATES = [
     ],
   },
   {
+    id: 'spotlight',
     label: '🎉 高光时刻',
+    category: 'action',
+    preview: prevSpotlight,
     shots: [
       '幕布拉开，主角走上舞台，灯光打下来，停在台中央',
       '颁奖台上，主角接过奖杯，转身面向观众，高举过头',

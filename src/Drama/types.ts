@@ -12,19 +12,30 @@ export interface Shot {
   id: string;
   prompt: string;
   status: ShotStatus;
-  startImageUrl?: string; // pre-generated start frame
-  endImageUrl?: string;   // optional pre-generated end frame
-  waitSeconds?: number;   // cooldown countdown before video generation
-  taskId?: string;        // async video job ID — persisted so polling can resume after app close
+  character?: Character;   // per-shot character override; falls back to shot[0] then default
+  startImageUrl?: string;  // pre-generated start frame
+  endImageUrl?: string;    // optional pre-generated end frame
+  waitSeconds?: number;    // cooldown countdown before video generation
+  taskId?: string;         // async video job ID — persisted so polling can resume after app close
   videoUrl?: string;
   error?: string;
 }
 
-export type Phase = 'setup' | 'script' | 'generating' | 'theater' | 'works';
+export type Phase = 'home' | 'script' | 'generating' | 'theater' | 'works';
+
+export type TemplateCategory = 'all' | 'city' | 'romance' | 'youth' | 'travel' | 'mood' | 'action';
+
+export interface DramaTemplate {
+  id: string;
+  label: string;
+  category: TemplateCategory;
+  shots: string[];
+  preview?: string; // imported image URL
+}
 
 export interface Work {
   id: string;
   createdAt: number;
-  character: Character;
+  character: Character; // primary character (from shot[0]), kept for backward compat
   shots: Shot[];
 }
