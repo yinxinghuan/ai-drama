@@ -92,13 +92,16 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
               {shot.status === 'generating'&& <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">生成视频</span></>}
               {shot.status === 'done'      && <span className="ad-gen__check">✓</span>}
               {shot.status === 'error'     && (
-                <button
-                  className="ad-gen__regen-btn"
-                  onPointerDown={() => onRegen(shot.id)}
-                  disabled={isGenerating}
-                >
-                  重拍
-                </button>
+                <div className="ad-gen__shot-err-wrap">
+                  {shot.error && <span className="ad-gen__shot-err-msg">{shot.error}</span>}
+                  <button
+                    className="ad-gen__regen-btn"
+                    onPointerDown={() => onRegen(shot.id)}
+                    disabled={isGenerating}
+                  >
+                    重拍
+                  </button>
+                </div>
               )}
             </div>
           </div>
