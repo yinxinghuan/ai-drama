@@ -65,7 +65,7 @@ export async function pollVideoTask(taskId: string): Promise<string> {
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
-    let data: { Flag?: boolean; File?: string; status?: string; Log?: string };
+    let data: { status?: string; url?: string; Flag?: boolean; File?: string; Log?: string };
     try {
       const res = await fetch(TASK_API, {
         method: 'POST',
@@ -82,6 +82,11 @@ export async function pollVideoTask(taskId: string): Promise<string> {
       continue; // network hiccup, retry
     }
 
+    // New format: { status: "success", url: "..." }
+    if (data.status === 'success' && data.url) {
+      return data.url;
+    }
+    // Legacy format: { Flag: true, File: "..." }
     if (data.Flag && data.File && typeof data.File === 'string') {
       return data.File;
     }
