@@ -217,10 +217,10 @@ export default {
       }
     }
 
-    // ── /video & /video_task: proxy via aiservice (nginx → GPU server) ───────
+    // ── /video & /video_task: proxy to GPU server ────────────────────────────
     if (url.pathname === '/video' || url.pathname === '/video_task') {
       const body = await request.text();
-      const target = 'http://aiservice.wdabuliu.com:8019' + url.pathname;
+      const target = 'https://u545921-b746-8a491f44.westc.gpuhub.com:8443' + url.pathname;
       const res = await fetch(target, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
