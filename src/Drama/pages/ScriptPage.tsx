@@ -242,6 +242,9 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                   </span>
                   {i === 0 && isInherited && <span className="ad-shot__char-badge-tag">默认</span>}
                 </div>
+                {shots.length > 1 && (
+                  <button className="ad-shot__remove" onPointerDown={() => removeShot(shot.id)}>✕</button>
+                )}
               </div>
 
               <textarea
@@ -314,9 +317,6 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                 })}
               </div>
 
-              {shots.length > 1 && (
-                <button className="ad-shot__remove" onPointerDown={() => removeShot(shot.id)}>✕</button>
-              )}
             </div>
           );
         })}
