@@ -217,25 +217,11 @@ export default {
       }
     }
 
-    // ── /video: proxy to video generation API ────────────────────────────────
-    if (url.pathname === '/video') {
+    // ── /video & /video_task: proxy via aiservice (nginx → GPU server) ───────
+    if (url.pathname === '/video' || url.pathname === '/video_task') {
       const body = await request.text();
-      const res = await fetch('https://u545921-b746-8a491f44.westc.gpuhub.com:8443/video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      });
-      const data = await res.text();
-      return new Response(data, {
-        status: res.status,
-        headers: { 'Content-Type': 'application/json', ...CORS },
-      });
-    }
-
-    // ── /video_task: proxy to video task polling API ───────────────────────────
-    if (url.pathname === '/video_task') {
-      const body = await request.text();
-      const res = await fetch('https://u545921-b746-8a491f44.westc.gpuhub.com:8443/video_task', {
+      const target = 'http://aiservice.wdabuliu.com:8019' + url.pathname;
+      const res = await fetch(target, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
