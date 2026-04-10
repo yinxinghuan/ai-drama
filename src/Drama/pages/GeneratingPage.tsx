@@ -42,18 +42,22 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
     }
   }, [activeGeneratingIndex]);
 
+  // Collect video URLs for preloading — stable string key
+  const videoUrls = successShots.map(s => s.videoUrl!).join(',');
+
   useEffect(() => {
     if (!allSettled || successShots.length === 0) return;
     setLoadedCount(0);
     let count = 0;
-    successShots.forEach(s => {
+    const urls = videoUrls.split(',').filter(Boolean);
+    urls.forEach(url => {
       const v = document.createElement('video');
       v.preload = 'auto';
       v.oncanplaythrough = () => { count++; setLoadedCount(count); };
       v.onerror = () => { count++; setLoadedCount(count); };
-      v.src = s.videoUrl!;
+      v.src = url;
     });
-  }, [allSettled]);
+  }, [allSettled, videoUrls]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const progress = active.length > 0 ? Math.round((doneCount / active.length) * 100) : 0;
   const selectedShot = active[selectedIndex] ?? active[0];
