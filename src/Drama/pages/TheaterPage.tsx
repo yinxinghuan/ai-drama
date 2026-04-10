@@ -20,6 +20,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
   const [current, setCurrent] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [shotIndicator, setShotIndicator] = useState<number | null>(null);
+  const [fitMode, setFitMode] = useState<'cover' | 'contain'>('cover');
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const controlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeStart = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -98,6 +99,14 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
     }
   }, [current, goTo, showAll]);
 
+  // ── Share ────────────────────────────────────────────────────────────────
+  const handleShare = useCallback(() => {
+    if (!shot?.videoUrl) return;
+    if (navigator.share) {
+      navigator.share({ url: shot.videoUrl }).catch(() => {});
+    }
+  }, [shot]);
+
   // ── Empty state ──────────────────────────────────────────────────────────
   if (playable.length === 0) {
     const errors = shots.filter(s => s.status === 'error');
@@ -105,7 +114,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
       <div className="ad-theater ad-theater--empty">
         <p>{t('theater.allFailed')}</p>
         {errors.map((s, i) => (
-          <p key={s.id} style={{ fontSize: 11, color: '#f87171', margin: '4px 16px', wordBreak: 'break-all' }}>
+          <p key={s.id} style={{ fontSize: 11, color: '#b07868', margin: '4px 16px', wordBreak: 'break-all' }}>
             {t('script.shot')} {i + 1}: {s.error}
           </p>
         ))}
@@ -127,7 +136,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
         <video
           key={s.videoUrl}
           ref={el => { videoRefs.current[i] = el; }}
-          className={`ad-theater__video${i === current ? ' ad-theater__video--active' : ''}`}
+          className={`ad-theater__video${i === current ? ' ad-theater__video--active' : ''}${fitMode === 'contain' ? ' ad-theater__video--contain' : ''}`}
           src={s.videoUrl}
           preload="auto"
           playsInline
@@ -153,7 +162,18 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
               </div>
             ) : null;
           })()}
-          <span className="ad-theater__counter">{current + 1} / {playable.length}</span>
+          <div className="ad-theater__top-right">
+            <button
+              className="ad-theater__fit-toggle"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                setFitMode(prev => prev === 'cover' ? 'contain' : 'cover');
+              }}
+            >
+              {fitMode === 'cover' ? '1:1' : '▣'}
+            </button>
+            <span className="ad-theater__counter">{String(current + 1).padStart(2, '0')} / {String(playable.length).padStart(2, '0')}</span>
+          </div>
         </div>
 
         {/* Spacer pushes bottom down */}
@@ -174,12 +194,12 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
             </div>
           )}
           <p className="ad-theater__prompt">{shot?.prompt}</p>
-          {/* Dots */}
+          {/* Segment bars */}
           <div className="ad-theater__dots">
             {playable.map((_, i) => (
               <span
                 key={i}
-                className={`ad-theater__dot${i === current ? ' ad-theater__dot--active' : ''}`}
+                className={`ad-theater__dot${i === current ? ' ad-theater__dot--active' : i < current ? ' ad-theater__dot--played' : ''}`}
                 onPointerDown={(e) => { e.stopPropagation(); goTo(i); }}
               />
             ))}
@@ -193,6 +213,9 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
                 {t('theater.regenFailed')} {shots.indexOf(s) + 1}（{t('theater.failed')}）
               </button>
             ))}
+            <button className="ad-theater__share" onPointerDown={(e) => { e.stopPropagation(); handleShare(); }}>
+              {t('theater.share')}
+            </button>
             <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); onRestart(); }}>{t('theater.reDirector')}</button>
           </div>
         </div>

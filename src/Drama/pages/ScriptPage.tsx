@@ -233,6 +233,29 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
         <span className="ad-script__title">{t('script.title')}</span>
       </div>
 
+      {/* Shot nav */}
+      <div className="ad-script__nav">
+        {shots.map((shot, i) => {
+          const hasFill = shot.prompt.trim().length > 0;
+          return (
+            <button
+              key={shot.id}
+              className={`ad-script__nav-item${i === 0 ? ' ad-script__nav-item--active' : ''}${hasFill && i > 0 ? ' ad-script__nav-item--filled' : ''}`}
+              onPointerDown={() => {
+                const el = document.getElementById(`shot-${shot.id}`);
+                el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            >
+              <span className="ad-script__nav-num">{i + 1}</span>
+              <span className="ad-script__nav-label">Scene</span>
+            </button>
+          );
+        })}
+        {shots.length < 8 && (
+          <button className="ad-script__nav-item ad-script__nav-item--add" onPointerDown={addShot}>+</button>
+        )}
+      </div>
+
       <div className="ad-shots">
         {shots.map((shot, i) => {
           const f = sf(shot.id);
@@ -240,36 +263,120 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
           const char = resolveShotChar(shot, shots, defaultCharacter);
           const isInherited = !shot.character;
           const charInitials = char?.name.slice(0, 2).toUpperCase() || '?';
+          // Check if previous shot has an end frame (for "use prev end frame" button)
+          const prevEndUrl = i > 0 ? sf(shots[i - 1].id).end.url : undefined;
+          const startFrame = f.start;
+          const showUsePrev = prevEndUrl && !startFrame.url && !isBusy(startFrame);
 
           return (
-            <div key={shot.id} className="ad-shot">
+            <div key={shot.id} id={`shot-${shot.id}`} className="ad-shot">
               <div className="ad-shot__header-row">
-                <span className="ad-shot__num">{t('script.shot')} {i + 1}</span>
-                <div
-                  className={`ad-shot__char-badge${isInherited ? ' ad-shot__char-badge--inherited' : ''}`}
-                  onPointerDown={() => setCharSelectFor(shot.id)}
-                >
-                  <div className="ad-shot__char-badge-avatar">
-                    {char?.head_url
-                      ? <img src={char.head_url} alt={char.name} draggable={false} />
-                      : <span>{charInitials}</span>}
-                  </div>
-                  <span className="ad-shot__char-badge-name">
-                    {char?.name || t('script.selectChar')}
-                  </span>
-                  {i === 0 && isInherited && <span className="ad-shot__char-badge-tag">{t('script.default')}</span>}
-                </div>
+                <span className="ad-shot__num">SCENE {i + 1}</span>
                 {shots.length > 1 && (
                   <button className="ad-shot__remove" onPointerDown={() => removeShot(shot.id)}>✕</button>
                 )}
               </div>
+              <div
+                className={`ad-shot__char-badge${isInherited ? ' ad-shot__char-badge--inherited' : ''}`}
+                onPointerDown={() => setCharSelectFor(shot.id)}
+              >
+                <div className="ad-shot__char-badge-avatar">
+                  {char?.head_url
+                    ? <img src={char.head_url} alt={char.name} draggable={false} />
+                    : <span>{charInitials}</span>}
+                </div>
+                <span className="ad-shot__char-badge-name">
+                  {char?.name || t('script.selectChar')}
+                </span>
+                {i === 0 && isInherited && <span className="ad-shot__char-badge-tag">{t('script.default')}</span>}
+                <span className="ad-shot__char-badge-arrow">▾</span>
+              </div>
+
+              {/* Frames row */}
+              <div className="ad-shot__frames">
+                {(['start', 'end'] as const).map((type, fi) => {
+                  const frame = f[type];
+                  const busy = isBusy(frame);
+                  const isStart = type === 'start';
+                  const inputId = `upload-${shot.id}-${type}`;
+                  return (
+                    <React.Fragment key={type}>
+                      {fi > 0 && <span className="ad-shot__frame-arrow">&rarr;</span>}
+                      <div className="ad-shot__frame-col">
+                        <div className="ad-shot__frame">
+                          <input
+                            id={inputId}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={e => handleFileChange(e, shot.id, type)}
+                            disabled={busy}
+                          />
+                          <label htmlFor={inputId} className={`ad-shot__frame-area ${busy ? 'ad-shot__frame-area--busy' : ''}`}>
+                            {frame.url
+                              ? <>
+                                  <img
+                                    key={frame.url}
+                                    className="ad-shot__frame-img"
+                                    src={frame.url}
+                                    alt={isStart ? t('script.startFrame') : t('script.endFrame')}
+                                    draggable={false}
+                                    onLoad={() => patchFrame(shot.id, type, { phase: 'idle' })}
+                                    onError={() => patchFrame(shot.id, type, ERROR)}
+                                  />
+                                  <span className="ad-shot__frame-replace">{t('script.replace')}</span>
+                                </>
+                              : <div className={`ad-shot__frame-empty ${!isStart ? 'ad-shot__frame-empty--dim' : ''} ${busy ? 'ad-shot__frame-empty--loading' : ''}`}>
+                                  {busy
+                                    ? <span className="ad-shot__frame-spinner" />
+                                    : <><span className="ad-shot__frame-upload-icon">+</span><span className="ad-shot__frame-upload-hint">{isStart ? t('script.startFrame') : t('script.endFrame')}</span></>
+                                  }
+                                </div>
+                            }
+                          </label>
+                        </div>
+                        <button
+                          className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
+                          onPointerDown={() => {
+                            if (!busy) {
+                              const shotChar = resolveShotChar(shot, shots, defaultCharacter);
+                              generateFrame(shot.id, shot.prompt, type, shotChar, { cancelled: false });
+                            }
+                          }}
+                          disabled={!hasPrompt || busy}
+                        >
+                          {btnContent(frame, isStart, cooldown)}
+                        </button>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              {/* Use prev end — full-width below frames */}
+              {showUsePrev && (
+                <button
+                  className="ad-shot__use-prev"
+                  onPointerDown={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
+                >
+                  &larr; {t('script.usePrevEnd')}
+                </button>
+              )}
+
+              {/* Divider */}
+              <div className="ad-shot__divider" />
 
               <textarea
                 className="ad-shot__input"
                 value={shot.prompt}
-                onChange={e => updatePrompt(shot.id, e.target.value)}
+                onChange={e => {
+                  updatePrompt(shot.id, e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                ref={el => { if (el && shot.prompt) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                 placeholder={suggestingId === shot.id ? t('script.aiSuggesting') : t('script.placeholder')}
-                rows={2}
               />
               <div className="ad-shot__hints">
                 {SHOT_PRESETS.slice(i * 2, i * 2 + 2).map(p => (
@@ -279,78 +386,13 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                 ))}
               </div>
 
-              <div className="ad-shot__frames">
-                {(['start', 'end'] as const).map(type => {
-                  const frame = f[type];
-                  const busy = isBusy(frame);
-                  const isStart = type === 'start';
-                  const inputId = `upload-${shot.id}-${type}`;
-                  // Check if previous shot has an end frame (for "use prev end frame" button)
-                  const prevEndUrl = isStart && i > 0 ? sf(shots[i - 1].id).end.url : undefined;
-                  return (
-                    <div key={type} className="ad-shot__frame">
-                      <input
-                        id={inputId}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={e => handleFileChange(e, shot.id, type)}
-                        disabled={busy}
-                      />
-                      <label htmlFor={inputId} className={`ad-shot__frame-area ${busy ? 'ad-shot__frame-area--busy' : ''}`}>
-                        {frame.url
-                          ? <>
-                              <img
-                                key={frame.url}
-                                className="ad-shot__frame-img"
-                                src={frame.url}
-                                alt={isStart ? t('script.startFrame') : t('script.endFrame')}
-                                draggable={false}
-                                onLoad={() => patchFrame(shot.id, type, { phase: 'idle' })}
-                                onError={() => patchFrame(shot.id, type, ERROR)}
-                              />
-                              <span className="ad-shot__frame-replace">{t('script.replace')}</span>
-                            </>
-                          : <div className={`ad-shot__frame-empty ${!isStart ? 'ad-shot__frame-empty--dim' : ''} ${busy ? 'ad-shot__frame-empty--loading' : ''}`}>
-                              {busy
-                                ? <span className="ad-shot__frame-spinner" />
-                                : <><span className="ad-shot__frame-upload-icon">＋</span><span>{isStart ? t('script.startFrame') : t('script.endFrame')}</span><span className="ad-shot__frame-upload-hint">{t('script.upload')}</span></>
-                              }
-                            </div>
-                        }
-                      </label>
-                      <button
-                        className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
-                        onPointerDown={() => {
-                          if (!busy) {
-                            const shotChar = resolveShotChar(shot, shots, defaultCharacter);
-                            generateFrame(shot.id, shot.prompt, type, shotChar, { cancelled: false });
-                          }
-                        }}
-                        disabled={!hasPrompt || busy}
-                      >
-                        {btnContent(frame, isStart, cooldown)}
-                      </button>
-                      {prevEndUrl && !frame.url && !busy && (
-                        <button
-                          className="ad-shot__frame-btn ad-shot__frame-btn--use-prev"
-                          onPointerDown={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
-                        >
-                          {t('script.usePrevEnd')}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
             </div>
           );
         })}
 
         {shots.length < 8 && (
           <button className="ad-add-shot" onPointerDown={addShot}>
-            {t('script.addShot')}（{shots.length}/8）
+            {t('script.addShot')}({shots.length}/8)
           </button>
         )}
       </div>

@@ -137,7 +137,10 @@ export default function Drama() {
 
     // Derive primary character from first shot
     const primaryChar = resolveCharacter(activeShots[0], enrichedShots, defaultCharacter);
-    if (!primaryChar) return;
+    if (!primaryChar) {
+      alert(t('gen.noChar'));
+      return;
+    }
 
     const workId = crypto.randomUUID();
     currentWorkId.current = workId;

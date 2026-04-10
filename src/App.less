@@ -1,10 +1,36 @@
+/* ── Design Tokens (warm cinematic palette) ─────────────────────────── */
+:root {
+  --bg-deep: #1a1a1b;
+  --bg: #222221;
+  --bg-warm: #2a2a28;
+  --bg-card: rgba(240, 236, 224, 0.045);
+  --bg-card-solid: #2c2c2a;
+  --bg-glass: rgba(38, 38, 35, 0.78);
+  --border: rgba(240, 236, 224, 0.09);
+  --border-warm: rgba(190, 178, 150, 0.2);
+  --accent: #bfad88;
+  --accent-dim: #a0936e;
+  --accent-olive: #7e8870;
+  --accent-green: #8a9e72;
+  --accent-amber: #bfa878;
+  --accent-red: #b07868;
+  --text: #dedad0;
+  --text-cream: #ccc8bc;
+  --text-dim: #8a8680;
+  --text-faint: rgba(222, 218, 208, 0.24);
+  --text-dark: #28282a;
+  --font-serif: 'Playfair Display', 'Noto Serif SC', 'Georgia', serif;
+  --font-serif-cn: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root {
   width: 100%;
   height: 100%;
-  background: #0d0d1a;
+  background: var(--bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text);
 }
 
 body {
