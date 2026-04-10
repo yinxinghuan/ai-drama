@@ -85,6 +85,8 @@ const dict: Record<string, { zh: string; en: string }> = {
   'works.delete':         { zh: '删除', en: 'Delete' },
   'works.share':          { zh: '分享', en: 'Share' },
   'works.copied':         { zh: '已复制', en: 'Copied' },
+  'works.confirmDelete':  { zh: '确定删除这个作品？', en: 'Delete this work?' },
+  'works.cancel':         { zh: '取消', en: 'Cancel' },
 
   // ── CharacterSelect ────────────────────────────────────────────────────
   'charsel.title':        { zh: '选择角色', en: 'Select Character' },
