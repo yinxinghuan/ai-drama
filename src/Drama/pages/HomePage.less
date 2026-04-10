@@ -85,6 +85,28 @@
   letter-spacing: 0.5px;
 }
 
+.ad-home__header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ad-home__lb-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(240, 236, 224, 0.06);
+  border: 1px solid @border;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s;
+  &:active { transform: scale(0.9); }
+}
+
 .ad-home__works-btn {
   background: rgba(191, 173, 136, 0.1);
   border: 1px solid rgba(191, 173, 136, 0.25);

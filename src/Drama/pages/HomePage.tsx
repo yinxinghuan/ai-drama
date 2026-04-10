@@ -4,6 +4,7 @@ import type { Character, DramaTemplate, TemplateCategory } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { DRAMA_TEMPLATES, TEMPLATE_CATEGORIES } from '../utils/presets';
 import CharacterSelect from '../components/CharacterSelect';
+import { useGameScore, Leaderboard } from '@shared/leaderboard';
 import { sfxTap, sfxConfirm, sfxNav } from '../utils/sounds';
 import freeCreateCover from '../img/templates/free_create.jpg';
 import './HomePage.less';
@@ -31,6 +32,8 @@ export default function HomePage({
 }: Props) {
   const [activeTab, setActiveTab] = useState<TemplateCategory>('all');
   const [showCharSelect, setShowCharSelect] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const { isInAigram, fetchGlobalLeaderboard, fetchFriendsLeaderboard } = useGameScore('ai-drama');
 
   const filtered = activeTab === 'all'
     ? DRAMA_TEMPLATES
@@ -57,7 +60,10 @@ export default function HomePage({
           <div className="ad-home__logo-mark">Ai</div>
           <span className="ad-home__logo-text">{t('app.title')}</span>
         </div>
-        <button className="ad-home__works-btn" onPointerDown={() => { sfxNav(); onOpenWorks(); }}>{t('app.myWorks')}</button>
+        <div className="ad-home__header-right">
+          <button className="ad-home__lb-btn" onPointerDown={() => { sfxNav(); setShowLeaderboard(true); }}>🏆</button>
+          <button className="ad-home__works-btn" onPointerDown={() => { sfxNav(); onOpenWorks(); }}>{t('app.myWorks')}</button>
+        </div>
       </div>
 
       <div className="ad-home__hero" onClick={() => { sfxConfirm(); onFreeCreate(); }}>
@@ -126,6 +132,16 @@ export default function HomePage({
           current={defaultCharacter}
           onPick={(char) => { onChangeDefaultCharacter(char); setShowCharSelect(false); }}
           onClose={() => setShowCharSelect(false)}
+        />
+      )}
+
+      {showLeaderboard && (
+        <Leaderboard
+          gameName="AI DRAMA"
+          isInAigram={isInAigram}
+          onClose={() => setShowLeaderboard(false)}
+          fetchGlobal={fetchGlobalLeaderboard}
+          fetchFriends={fetchFriendsLeaderboard}
         />
       )}
     </div>
