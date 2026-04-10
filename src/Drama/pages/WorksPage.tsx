@@ -42,7 +42,10 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
     }).catch(() => {});
   }, []);
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
+    setConfirmDeleteId(null);
     setWorks(prev => prev.filter(w => w.id !== id));
     try {
       await deleteWork(uid, id);
@@ -127,13 +130,31 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
                     )}
                     <button
                       className="ad-work-card__btn ad-work-card__btn--del"
-                      onClick={e => { e.stopPropagation(); sfxWarn(); handleDelete(work.id); }}
+                      onClick={e => { e.stopPropagation(); sfxWarn(); setConfirmDeleteId(work.id); }}
                     >✕ {t('works.delete')}</button>
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div className="ad-works__confirm-overlay" onPointerDown={() => setConfirmDeleteId(null)}>
+          <div className="ad-works__confirm" onPointerDown={e => e.stopPropagation()}>
+            <div className="ad-works__confirm-title">{t('works.confirmDelete')}</div>
+            <div className="ad-works__confirm-actions">
+              <button
+                className="ad-works__confirm-btn ad-works__confirm-btn--cancel"
+                onPointerDown={() => { sfxNav(); setConfirmDeleteId(null); }}
+              >{t('works.cancel')}</button>
+              <button
+                className="ad-works__confirm-btn ad-works__confirm-btn--del"
+                onPointerDown={() => { sfxWarn(); handleDelete(confirmDeleteId); }}
+              >{t('works.delete')}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
