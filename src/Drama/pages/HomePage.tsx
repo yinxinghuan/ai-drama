@@ -4,6 +4,7 @@ import type { Character, DramaTemplate, TemplateCategory } from '../types';
 import type { AigramState } from '../hooks/useAigram';
 import { DRAMA_TEMPLATES, TEMPLATE_CATEGORIES } from '../utils/presets';
 import CharacterSelect from '../components/CharacterSelect';
+import { sfxTap, sfxConfirm, sfxNav } from '../utils/sounds';
 import freeCreateCover from '../img/templates/free_create.jpg';
 import './HomePage.less';
 
@@ -56,10 +57,10 @@ export default function HomePage({
           <div className="ad-home__logo-mark">Ai</div>
           <span className="ad-home__logo-text">{t('app.title')}</span>
         </div>
-        <button className="ad-home__works-btn" onPointerDown={onOpenWorks}>{t('app.myWorks')}</button>
+        <button className="ad-home__works-btn" onPointerDown={() => { sfxNav(); onOpenWorks(); }}>{t('app.myWorks')}</button>
       </div>
 
-      <div className="ad-home__hero" onClick={onFreeCreate}>
+      <div className="ad-home__hero" onClick={() => { sfxConfirm(); onFreeCreate(); }}>
         <div
           className="ad-home__hero-avatar"
           onClick={(e) => { e.stopPropagation(); setShowCharSelect(true); }}
@@ -85,7 +86,7 @@ export default function HomePage({
           <button
             key={cat.key}
             className={`ad-home__tab${activeTab === cat.key ? ' ad-home__tab--active' : ''}`}
-            onClick={() => setActiveTab(cat.key)}
+            onClick={() => { sfxNav(); setActiveTab(cat.key); }}
           >
             {cat.label}
           </button>
@@ -94,7 +95,7 @@ export default function HomePage({
 
       <div className="ad-home__scroll">
         <div className="ad-home__grid">
-          <div className="ad-home__card" onClick={onFreeCreate}>
+          <div className="ad-home__card" onClick={() => { sfxTap(); onFreeCreate(); }}>
             <img className="ad-home__card-img" src={freeCreateCover} alt="Free Create" draggable={false} />
             <div className="ad-home__card-overlay">
               <div className="ad-home__card-title">{t('home.freeCreate')}</div>
@@ -105,7 +106,7 @@ export default function HomePage({
             <div
               key={tmpl.id}
               className="ad-home__card"
-              onClick={() => onSelectTemplate(tmpl)}
+              onClick={() => { sfxTap(); onSelectTemplate(tmpl); }}
             >
               {tmpl.preview
                 ? <img className="ad-home__card-img" src={tmpl.preview} alt={tmpl.label} draggable={false} />

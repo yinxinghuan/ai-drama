@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { t } from '../i18n';
 import type { Shot, Character } from '../types';
+import { sfxTap, sfxNav } from '../utils/sounds';
 import './TheaterPage.less';
 
 interface Props {
@@ -118,7 +119,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
             {t('script.shot')} {i + 1}: {s.error}
           </p>
         ))}
-        <button className="ad-theater__restart" onPointerDown={onRestart}>{t('theater.restart')}</button>
+        <button className="ad-theater__restart" onPointerDown={() => { sfxNav(); onRestart(); }}>{t('theater.restart')}</button>
       </div>
     );
   }
@@ -148,7 +149,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
       <div className={`ad-theater__overlay${showControls ? ' ad-theater__overlay--show' : ''}`}>
         {/* Top */}
         <div className="ad-theater__top">
-          <button className="ad-theater__back" onPointerDown={(e) => { e.stopPropagation(); onBack(); }}>←</button>
+          <button className="ad-theater__back" onPointerDown={(e) => { e.stopPropagation(); sfxNav(); onBack(); }}>←</button>
           {(() => {
             const ch = shot ? resolveChar(shot, shots, defaultCharacter) : null;
             return ch ? (
@@ -167,6 +168,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
               className="ad-theater__fit-toggle"
               onPointerDown={(e) => {
                 e.stopPropagation();
+                sfxNav();
                 setFitMode(prev => prev === 'cover' ? 'contain' : 'cover');
               }}
             >
@@ -205,18 +207,18 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
             ))}
           </div>
           <div className="ad-theater__actions">
-            <button className="ad-theater__regen ad-theater__regen--current" onPointerDown={(e) => { e.stopPropagation(); onRegenShot(shot.id); }}>
+            <button className="ad-theater__regen ad-theater__regen--current" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); onRegenShot(shot.id); }}>
               {t('theater.regenCurrent')}
             </button>
             {failedShots.map(s => (
-              <button key={s.id} className="ad-theater__regen" onPointerDown={(e) => { e.stopPropagation(); onRegenShot(s.id); }}>
+              <button key={s.id} className="ad-theater__regen" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); onRegenShot(s.id); }}>
                 {t('theater.regenFailed')} {shots.indexOf(s) + 1}（{t('theater.failed')}）
               </button>
             ))}
-            <button className="ad-theater__share" onPointerDown={(e) => { e.stopPropagation(); handleShare(); }}>
+            <button className="ad-theater__share" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); handleShare(); }}>
               {t('theater.share')}
             </button>
-            <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); onRestart(); }}>{t('theater.reDirector')}</button>
+            <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); sfxNav(); onRestart(); }}>{t('theater.reDirector')}</button>
           </div>
         </div>
       </div>

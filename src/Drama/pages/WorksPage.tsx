@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { t } from '../i18n';
 import type { Work } from '../types';
 import { loadWorksLocal, loadWorksRemote, deleteWork } from '../utils/works';
+import { sfxTap, sfxNav, sfxWarn, sfxSuccess } from '../utils/sounds';
 import './WorksPage.less';
 
 interface Props {
@@ -35,6 +36,7 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
     const base = window.location.origin + '/ai-drama/';
     const url = `${base}?work=${workId}`;
     navigator.clipboard.writeText(url).then(() => {
+      sfxSuccess();
       setCopiedId(workId);
       setTimeout(() => setCopiedId(null), 2000);
     }).catch(() => {});
@@ -52,7 +54,7 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
   return (
     <div className="ad-works">
       <div className="ad-works__header">
-        <button className="ad-works__back" onPointerDown={onBack}>←</button>
+        <button className="ad-works__back" onPointerDown={() => { sfxNav(); onBack(); }}>←</button>
         <span className="ad-works__title">{t('app.myWorks')}</span>
       </div>
 
@@ -120,12 +122,12 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
                     {isDone && (
                       <button
                         className={`ad-work-card__btn ad-work-card__btn--share${copiedId === work.id ? ' ad-work-card__btn--copied' : ''}`}
-                        onClick={e => { e.stopPropagation(); handleShare(work.id); }}
+                        onClick={e => { e.stopPropagation(); sfxTap(); handleShare(work.id); }}
                       >{copiedId === work.id ? `✓ ${t('works.copied')}` : `↗ ${t('works.share')}`}</button>
                     )}
                     <button
                       className="ad-work-card__btn ad-work-card__btn--del"
-                      onClick={e => { e.stopPropagation(); handleDelete(work.id); }}
+                      onClick={e => { e.stopPropagation(); sfxWarn(); handleDelete(work.id); }}
                     >✕ {t('works.delete')}</button>
                   </div>
                 </div>
