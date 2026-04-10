@@ -105,17 +105,18 @@
   &:active { transform: scale(0.985); background: rgba(240, 236, 224, 0.06); }
 }
 
-// Cover area
+// Cover area — padding-top fallback for webviews without aspect-ratio
 .ad-work-card__cover {
   width: 100%;
-  aspect-ratio: 16 / 10;
-  min-height: 140px;
+  padding-top: 56%;  // ~16:9-ish
   background: #1a1a1a;
   position: relative;
   overflow: hidden;
 }
 
 .ad-work-card__cover-video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

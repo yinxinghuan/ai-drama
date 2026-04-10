@@ -80,7 +80,7 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
                 <div className="ad-work-card__cover">
                   {firstVideo
                     ? <video className="ad-work-card__cover-video" src={firstVideo} poster={thumbPoster} playsInline muted preload="metadata" />
-                    : <div style={{ width: '100%', height: '100%', background: '#1a1a1a' }} />
+                    : <div style={{ position: 'absolute', inset: 0, background: '#1a1a1a' }} />
                   }
                   <div className="ad-work-card__play">
                     <div className="ad-work-card__play-icon">{isInProgress ? '⟳' : '▶'}</div>
