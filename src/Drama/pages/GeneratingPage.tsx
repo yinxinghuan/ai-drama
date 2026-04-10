@@ -101,7 +101,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
             <div
               key={shot.id}
               className={cellClass}
-              onPointerDown={() => {
+              onClick={() => {
                 setSelectedIndex(i);
                 if (isDone && shot.videoUrl) setPreviewUrl(shot.videoUrl);
               }}
@@ -142,7 +142,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
                 {selectedShot.error && <span className="ad-gen__shot-err-msg">{selectedShot.error}</span>}
                 <button
                   className="ad-gen__regen-btn"
-                  onPointerDown={() => onRegen(selectedShot.id)}
+                  onClick={() => onRegen(selectedShot.id)}
                   disabled={isGenerating}
                 >
                   {t('gen.regen')}

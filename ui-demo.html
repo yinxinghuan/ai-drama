@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Drama — UI Redesign v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI Drama UI v2 — Warm Cinematic / Art-house Style
+   Palette: olive, cream, warm brown, muted gold
+   Typography: Playfair Display (EN) + Noto Serif SC (CN) for titles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Warm muted palette — slight warmth for CTA visibility */
+  --bg-deep: #1a1a1b;
+  --bg: #222221;
+  --bg-warm: #2a2a28;
+  --bg-card: rgba(240, 236, 224, 0.045);
+  --bg-card-solid: #2c2c2a;
+  --bg-glass: rgba(38, 38, 35, 0.78);
+  --bg-cream: #e6e2d6;
+  --bg-cream-dim: #d4d0c4;
+  --border: rgba(240, 236, 224, 0.09);
+  --border-warm: rgba(190, 178, 150, 0.2);
+  --accent: #bfad88;          /* warm sand — slightly more saturated for CTA */
+  --accent-dim: #a0936e;
+  --accent-olive: #7e8870;
+  --accent-green: #8a9e72;    /* muted but readable green */
+  --accent-amber: #bfa878;
+  --accent-red: #b07868;      /* muted warm red */
+  --text: #dedad0;
+  --text-cream: #ccc8bc;
+  --text-dim: #8a8680;
+  --text-faint: rgba(222, 218, 208, 0.24);
+  --text-dark: #28282a;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 14px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Playfair Display', 'Noto Serif SC', 'Georgia', serif;
+  --font-serif-cn: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #141310;
+  font-family: var(--font);
+  display: flex;
+  gap: 32px;
+  padding: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Phone frame */
+.phone {
+  width: 375px;
+  height: 740px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 8px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,248,235,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-label {
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 12px;
+  font-family: var(--font-serif);
+  letter-spacing: 1px;
+}
+
+.phone-wrap { display: flex; flex-direction: column; align-items: center; }
+
+/* ── Shared ─────────────────────────────────────────────────────────── */
+.label-spaced {
+  font-family: var(--font-serif);
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.title-serif {
+  font-family: var(--font-serif-cn);
+  font-weight: 700;
+}
+
+.btn-main {
+  background: var(--accent);
+  border: none;
+  color: var(--text-dark);
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-size: 14px;
+  cursor: pointer;
+  width: 100%;
+  letter-spacing: 0.5px;
+  font-family: var(--font);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-warm);
+  color: var(--text-cream);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font);
+  letter-spacing: 0.3px;
+}
+
+.avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(191,173,136,0.15);
+  flex-shrink: 0;
+}
+
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+
+.scrollable::-webkit-scrollbar { display: none; }
+
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE 1: HOME
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.home { display: flex; flex-direction: column; }
+
+.home__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+  flex-shrink: 0;
+}
+
+.home__logo {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.home__logo-mark {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--text-dark); font-weight: 800;
+  font-family: var(--font-serif);
+}
+
+.home__logo-text {
+  font-family: var(--font-serif);
+  font-size: 15px; font-weight: 700;
+  color: var(--text-cream);
+  letter-spacing: 0.5px;
+}
+
+.home__works-btn {
+  background: rgba(191,173,136,0.1);
+  border: 1px solid rgba(191,173,136,0.25);
+  color: var(--accent);
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Hero */
+.home__hero {
+  margin: 18px 20px 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  height: 180px;
+  background: linear-gradient(160deg, #302f2c 0%, #282828 40%, #222222 100%);
+  cursor: pointer;
+}
+
+.home__hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 75% 30%, rgba(191,173,136,0.12), transparent 55%),
+    radial-gradient(ellipse at 25% 70%, rgba(126,136,112,0.1), transparent 50%);
+}
+
+.home__hero-content {
+  position: relative;
+  height: 100%;
+  display: flex; flex-direction: column;
+  justify-content: flex-end;
+  padding: 22px;
+}
+
+.home__hero-label {
+  font-family: var(--font-serif);
+  font-size: 9px; letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.home__hero-title {
+  font-family: var(--font-serif-cn);
+  font-size: 22px; font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.home__hero-sub {
+  font-size: 12px; color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.home__hero-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(191,173,136,0.12);
+  border: 1px solid rgba(191,173,136,0.3);
+  color: var(--accent);
+  padding: 8px 18px;
+  border-radius: 24px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  letter-spacing: 0.3px;
+}
+
+.home__hero-avatar {
+  position: absolute; top: 22px; right: 22px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(191,173,136,0.3);
+  background: rgba(191,173,136,0.15);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent); font-size: 16px; font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+/* Section */
+.home__section {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 22px 20px 10px;
+}
+
+.home__section-title {
+  font-family: var(--font-serif-cn);
+  font-size: 15px; font-weight: 700;
+}
+
+.home__section-more {
+  font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.3px;
+}
+
+/* Chips */
+.home__chips {
+  display: flex; gap: 8px; padding: 0 20px 14px;
+  overflow-x: auto;
+}
+.home__chips::-webkit-scrollbar { display: none; }
+
+.home__chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.home__chip--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+/* Grid */
+.home__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 20px 20px;
+}
+
+.home__card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--bg-warm);
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.home__card-bg {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+}
+
+.home__card-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 32px 12px 12px;
+  background: linear-gradient(to top, rgba(26,25,20,0.9) 20%, transparent);
+}
+
+.home__card-title {
+  font-family: var(--font-serif-cn);
+  font-size: 13px; font-weight: 700;
+  color: var(--text-cream);
+}
+
+.home__card-label {
+  font-size: 9px; letter-spacing: 0.25em;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE 2: SCRIPT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.script { display: flex; flex-direction: column; }
+
+.script__header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.script__back {
+  background: rgba(240,236,224,0.06); border: 1px solid var(--border);
+  color: var(--text-cream); font-size: 16px; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.script__title {
+  font-family: var(--font-serif-cn);
+  font-size: 16px; font-weight: 700;
+}
+
+/* Timeline */
+.script__timeline {
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px 20px 10px;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.script__tl-dot {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-serif);
+  transition: all 0.2s;
+}
+
+.script__tl-dot--active {
+  background: rgba(191,173,136,0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 16px rgba(191,173,136,0.15);
+}
+
+.script__tl-dot--done {
+  background: rgba(138,158,114,0.1);
+  border-color: var(--accent-olive);
+  color: var(--accent-olive);
+}
+
+.script__tl-line {
+  width: 36px; height: 1px;
+  background: var(--border);
+}
+
+.script__tl-line--done { background: rgba(138,158,114,0.3); }
+
+.script__tl-add {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  background: none;
+  border: 1.5px dashed var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* Shot card — cream paper style */
+.script__shot {
+  margin: 0 20px 14px;
+  background: rgba(245,238,214,0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.script__shot--active {
+  border-color: rgba(191,173,136,0.3);
+  background: rgba(245,238,214,0.06);
+}
+
+.script__shot-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.script__shot-num {
+  font-family: var(--font-serif);
+  font-size: 10px; font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.script__shot-char {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer;
+  padding: 4px 10px 4px 4px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(240,236,224,0.03);
+  transition: border-color 0.2s;
+}
+
+.script__shot-char:active { border-color: rgba(191,173,136,0.3); }
+
+.script__shot-char .avatar {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--accent); font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.script__shot-char span { font-size: 11px; color: var(--text-dim); }
+
+.script__shot-char-arrow {
+  font-size: 8px; color: var(--text-faint);
+  margin-left: 2px;
+}
+
+/* Frames */
+.script__frames {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 14px;
+}
+
+.script__frame {
+  flex: 1;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: rgba(255,248,235,0.03);
+  border: 1.5px dashed rgba(255,248,235,0.1);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.script__frame--filled {
+  border-style: solid;
+  border-color: rgba(191,173,136,0.2);
+}
+
+.script__frame-icon { font-size: 16px; color: var(--text-faint); }
+.script__frame-label { font-size: 9px; color: var(--text-faint); letter-spacing: 0.1em; }
+
+.script__frame-arrow {
+  color: var(--text-faint);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Frame column — frame + buttons stacked */
+.script__frame-col {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 0;
+}
+
+.script__frame-btn {
+  width: 100%;
+  padding: 7px 0;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  border: 1px solid rgba(191,173,136,0.2);
+  background: rgba(191,173,136,0.08);
+  color: var(--accent);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.script__frame-btn--dim {
+  border-color: var(--border);
+  background: rgba(240,236,224,0.03);
+  color: var(--text-dim);
+}
+
+.script__frame-btn--link {
+  border: none;
+  background: none;
+  color: var(--accent-olive);
+  font-size: 10px;
+  padding: 4px 0;
+}
+
+.script__frame-btn--cd {
+  font-size: 10px;
+  color: var(--accent-amber);
+  opacity: 0.7;
+}
+
+/* Use prev end — full-width link below frames */
+.script__use-prev {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--accent-olive);
+  font-size: 11px;
+  padding: 6px 0 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+  letter-spacing: 0.2px;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.script__use-prev:active { opacity: 1; }
+
+/* Divider line */
+.script__divider {
+  width: 100%; height: 1px;
+  background: var(--border);
+  margin-bottom: 12px;
+}
+
+/* Textarea */
+.script__input {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-cream);
+  font-size: 14px;
+  line-height: 1.7;
+  resize: none;
+  outline: none;
+  font-family: var(--font);
+}
+
+.script__input::placeholder { color: rgba(240,232,212,0.18); }
+
+/* Hints */
+.script__hints {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 10px;
+}
+
+.script__hint {
+  background: rgba(191,173,136,0.06);
+  border: 1px solid rgba(191,173,136,0.12);
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Footer */
+.script__footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE 3: GENERATING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gen { display: flex; flex-direction: column; align-items: center; }
+
+.gen__header {
+  width: 100%;
+  display: flex; align-items: center; padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+.gen__back {
+  background: rgba(240,236,224,0.06); border: 1px solid var(--border);
+  color: var(--text-cream); font-size: 16px; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.gen__center {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 20px 16px;
+  flex-shrink: 0;
+}
+
+.gen__icon {
+  font-size: 32px; margin-bottom: 14px;
+  opacity: 0.8;
+}
+
+.gen__title {
+  font-family: var(--font-serif-cn);
+  font-size: 20px; font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-cream);
+}
+
+.gen__sub { font-size: 12px; color: var(--text-dim); }
+
+/* Progress */
+.gen__progress {
+  width: calc(100% - 40px);
+  margin: 14px 20px 0;
+  flex-shrink: 0;
+}
+
+.gen__bar {
+  height: 4px; border-radius: 2px;
+  background: rgba(255,248,235,0.06);
+  overflow: hidden;
+}
+
+.gen__bar-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-olive), var(--accent));
+  width: 50%;
+}
+
+.gen__bar-label {
+  display: flex; justify-content: flex-end;
+  font-size: 11px; color: var(--text-dim);
+  margin-top: 6px;
+  font-family: var(--font-serif);
+  letter-spacing: 0.1em;
+}
+
+/* Filmstrip */
+.gen__filmstrip {
+  display: flex; gap: 10px;
+  padding: 22px 20px 14px;
+  width: 100%;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gen__film-cell {
+  width: 64px; height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: rgba(255,248,235,0.03);
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.gen__film-cell--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(191,173,136,0.15);
+}
+
+.gen__film-cell--done {
+  border-color: rgba(138,158,114,0.3);
+}
+
+.gen__film-cell-num {
+  font-size: 12px; color: var(--text-faint);
+  font-family: var(--font-serif);
+}
+
+.gen__film-check {
+  position: absolute; bottom: 4px; right: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent-olive);
+  color: #fff; font-size: 9px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.gen__film-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid rgba(191,173,136,0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Micro-animations ──────────────────────────────────────────────── */
+
+/* Pulse glow on active filmstrip cell */
+.gen__film-cell--active {
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 12px rgba(191,173,136,0.1); }
+  50% { box-shadow: 0 0 24px rgba(191,173,136,0.25); }
+}
+
+/* Progress bar shimmer */
+.gen__bar-fill {
+  position: relative;
+  overflow: hidden;
+}
+
+.gen__bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -50%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -50%; }
+  100% { left: 150%; }
+}
+
+/* Theater scene number fade-in */
+.theater__scene-num {
+  animation: scene-in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scene-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Theater segment progress glow pulse */
+.theater__seg--active {
+  animation: seg-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes seg-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(191,173,136,0.2); }
+  50% { box-shadow: 0 0 12px rgba(191,173,136,0.45); }
+}
+
+/* Works card badge subtle pulse for in-progress */
+.works__card-badge--progress {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Button press feedback */
+.btn-main:active { transform: scale(0.97); }
+.home__hero:active { transform: scale(0.985); }
+.home__card:active { transform: scale(0.96); }
+.works__card:active { transform: scale(0.985); }
+
+.btn-main, .home__hero, .home__card, .works__card {
+  transition: transform 0.12s ease;
+}
+
+/* Script timeline dot active pulse */
+.script__tl-dot--active {
+  animation: tl-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tl-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(191,173,136,0.1); }
+  50% { box-shadow: 0 0 18px rgba(191,173,136,0.25); }
+}
+
+/* Preview */
+.gen__preview {
+  width: calc(100% - 40px);
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: rgba(255,248,235,0.02);
+  border: 1px solid var(--border);
+  margin: 8px 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.gen__preview-inner {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+}
+
+.gen__preview-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(191,173,136,0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.gen__preview-text {
+  font-size: 12px; color: var(--text-dim);
+  font-family: var(--font-serif-cn);
+}
+
+.gen__prompt-text {
+  padding: 10px 20px;
+  font-size: 12px; color: var(--text-dim);
+  text-align: center; line-height: 1.6;
+}
+
+.gen__footer {
+  padding: 14px 20px;
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.gen__footer .btn-main { opacity: 0.35; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE 4: THEATER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.theater {
+  background: #141414;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theater__video-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(150deg, #282828, #1c1c1c, #222222);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.theater__video-placeholder {
+  width: 80%; height: 55%;
+  border-radius: var(--radius-md);
+  background: rgba(255,248,235,0.03);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; color: rgba(255,248,235,0.08);
+}
+
+/* Overlay */
+.theater__overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  z-index: 15;
+}
+
+.theater__top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px;
+  background: linear-gradient(to bottom, rgba(20,20,20,0.7), transparent);
+}
+
+.theater__back {
+  background: rgba(240,236,224,0.08); border: 1px solid rgba(240,236,224,0.12);
+  color: var(--text-cream); font-size: 16px; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.theater__char {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.theater__char .avatar {
+  width: 32px; height: 32px;
+  border: 1.5px solid rgba(191,173,136,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--accent); font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.theater__char-name {
+  font-size: 13px; font-weight: 600;
+  color: var(--text-cream);
+}
+
+.theater__counter {
+  font-size: 12px; color: var(--text-dim);
+  font-family: var(--font-serif);
+  letter-spacing: 0.15em;
+}
+
+/* Center indicator */
+.theater__indicator {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+
+.theater__scene-label {
+  font-family: var(--font-serif);
+  font-size: 9px; letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: rgba(191,173,136,0.5);
+  margin-bottom: 10px;
+  padding-left: 0.5em;
+}
+
+.theater__scene-row {
+  display: flex; align-items: baseline;
+}
+
+.theater__scene-num {
+  font-family: var(--font-serif);
+  font-size: 72px; font-weight: 400;
+  color: var(--text-cream); line-height: 0.85;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 60px rgba(191,173,136,0.2), 0 4px 30px rgba(0,0,0,0.5);
+}
+
+.theater__scene-sep {
+  font-family: var(--font-serif);
+  font-size: 24px; color: rgba(240,232,212,0.12);
+  margin: 0 8px;
+}
+
+.theater__scene-total {
+  font-family: var(--font-serif);
+  font-size: 24px; color: rgba(240,232,212,0.18);
+}
+
+.theater__scene-line {
+  width: 36px; height: 1px;
+  background: rgba(191,173,136,0.2);
+  margin-top: 16px;
+}
+
+/* Bottom */
+.theater__bottom {
+  padding: 22px 20px;
+  background: linear-gradient(to top, rgba(20,20,20,0.8), transparent);
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.theater__prompt {
+  font-size: 13px;
+  color: rgba(240,232,212,0.5);
+  text-align: center;
+  line-height: 1.6;
+  font-family: var(--font-serif-cn);
+}
+
+/* Progress segments */
+.theater__segs {
+  display: flex; justify-content: center; align-items: center; gap: 4px;
+}
+
+.theater__seg {
+  height: 3px; border-radius: 2px;
+  flex: 1; max-width: 48px;
+  background: rgba(240,232,212,0.1);
+  transition: all 0.3s;
+}
+
+.theater__seg--played { background: rgba(191,173,136,0.35); }
+.theater__seg--active {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(191,173,136,0.3);
+}
+
+.theater__actions {
+  display: flex; gap: 8px; justify-content: center;
+}
+
+.theater__action {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.theater__action--regen {
+  background: rgba(191,173,136,0.1);
+  border-color: rgba(191,173,136,0.25);
+  color: var(--accent);
+}
+
+.theater__action--share {
+  background: rgba(138,158,114,0.1);
+  border-color: rgba(138,158,114,0.25);
+  color: var(--accent-olive);
+}
+
+.theater__action--restart {
+  background: rgba(255,248,235,0.04);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE 5: WORKS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.works { display: flex; flex-direction: column; }
+
+.works__header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.works__back {
+  background: rgba(240,236,224,0.06); border: 1px solid var(--border);
+  color: var(--text-cream); font-size: 16px; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.works__title {
+  font-family: var(--font-serif-cn);
+  font-size: 16px; font-weight: 700;
+}
+
+.works__list {
+  padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* Card */
+.works__card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: rgba(255,248,235,0.03);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.works__card:active { background: rgba(255,248,235,0.06); }
+
+.works__card-cover {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  background: #1a1a1a;
+  position: relative;
+  overflow: hidden;
+}
+
+.works__card-play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.25);
+}
+
+.works__card-play-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,248,235,0.1);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--text-cream);
+  border: 1.5px solid rgba(255,248,235,0.15);
+}
+
+.works__card-badge {
+  position: absolute; top: 10px; right: 10px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10px; font-weight: 600;
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.3px;
+}
+
+.works__card-badge--done {
+  background: rgba(138,158,114,0.2);
+  color: var(--accent-green);
+  border: 1px solid rgba(138,158,114,0.3);
+}
+
+.works__card-badge--progress {
+  background: rgba(191,168,120,0.2);
+  color: var(--accent-amber);
+  border: 1px solid rgba(191,168,120,0.3);
+}
+
+.works__card-progress {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: rgba(255,248,235,0.06);
+}
+
+.works__card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-olive), var(--accent));
+  border-radius: 0 2px 2px 0;
+}
+
+.works__card-info {
+  padding: 12px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.works__card-meta {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.works__card-meta .avatar {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--accent); font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.works__card-meta-text {
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.works__card-name { font-size: 13px; font-weight: 600; color: var(--text-cream); }
+
+.works__card-detail { font-size: 11px; color: var(--text-dim); }
+
+.works__card-actions { display: flex; gap: 6px; }
+
+.works__card-action {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,248,235,0.04);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: HOME -->
+<div class="phone-wrap">
+  <div class="phone-label">Home</div>
+  <div class="phone home">
+    <div class="home__topbar">
+      <div class="home__logo">
+        <div class="home__logo-mark">Ai</div>
+        <span class="home__logo-text">AI Drama</span>
+      </div>
+      <button class="home__works-btn">My Works</button>
+    </div>
+
+    <div class="scrollable">
+      <div class="home__hero">
+        <div class="home__hero-avatar">G</div>
+        <div class="home__hero-content">
+          <div class="home__hero-label">D I R E C T O R</div>
+          <div class="home__hero-title">Start Your Story</div>
+          <div class="home__hero-sub">Choose a character, write your script</div>
+          <div class="home__hero-cta">Free Create →</div>
+        </div>
+      </div>
+
+      <div class="home__section">
+        <span class="home__section-title">Script Inspiration</span>
+      </div>
+
+      <div class="home__chips">
+        <div class="home__chip home__chip--active">All</div>
+        <div class="home__chip">Life</div>
+        <div class="home__chip">Emotion</div>
+        <div class="home__chip">Journey</div>
+        <div class="home__chip">Genre</div>
+      </div>
+
+      <div class="home__grid">
+        <div class="home__card">
+          <div class="home__card-bg" style="background:linear-gradient(150deg,#302f2c,#282828)">💼</div>
+          <div class="home__card-overlay">
+            <div class="home__card-title">City Hustle</div>
+            <div class="home__card-label">L I F E</div>
+          </div>
+        </div>
+        <div class="home__card">
+          <div class="home__card-bg" style="background:linear-gradient(150deg,#2e2c2a,#282726)">🍜</div>
+          <div class="home__card-overlay">
+            <div class="home__card-title">Midnight Diner</div>
+            <div class="home__card-label">L I F E</div>
+          </div>
+        </div>
+        <div class="home__card">
+          <div class="home__card-bg" style="background:linear-gradient(150deg,#2d2c2e,#282828)">💘</div>
+          <div class="home__card-overlay">
+            <div class="home__card-title">City Romance</div>
+            <div class="home__card-label">R O M A N C E</div>
+          </div>
+        </div>
+        <div class="home__card">
+          <div class="home__card-bg" style="background:linear-gradient(150deg,#2a2a2c,#272728)">💌</div>
+          <div class="home__card-overlay">
+            <div class="home__card-title">Letter Never Sent</div>
+            <div class="home__card-label">R O M A N C E</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAGE 2: SCRIPT -->
+<div class="phone-wrap">
+  <div class="phone-label">Script</div>
+  <div class="phone script">
+    <div class="script__header">
+      <button class="script__back">←</button>
+      <span class="script__title">Script Editor</span>
+    </div>
+
+    <div class="script__timeline">
+      <div class="script__tl-dot script__tl-dot--active">1</div>
+      <div class="script__tl-line"></div>
+      <div class="script__tl-dot">2</div>
+      <div class="script__tl-line"></div>
+      <div class="script__tl-dot">3</div>
+      <div class="script__tl-line"></div>
+      <div class="script__tl-dot">4</div>
+      <button class="script__tl-add">+</button>
+    </div>
+
+    <div class="scrollable" style="padding-top:6px">
+      <div class="script__shot script__shot--active">
+        <div class="script__shot-head">
+          <span class="script__shot-num">S C E N E &nbsp; 1</span>
+          <div class="script__shot-char">
+            <div class="avatar">G</div>
+            <span>ghostpixel</span>
+            <span class="script__shot-char-arrow">▾</span>
+          </div>
+        </div>
+
+        <div class="script__frames">
+          <div class="script__frame-col">
+            <div class="script__frame script__frame--filled">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#302f2c,#262625);border-radius:8px"></div>
+            </div>
+            <button class="script__frame-btn">Regenerate</button>
+          </div>
+          <span class="script__frame-arrow">→</span>
+          <div class="script__frame-col">
+            <div class="script__frame">
+              <span class="script__frame-icon">+</span>
+              <span class="script__frame-label">End</span>
+            </div>
+            <button class="script__frame-btn script__frame-btn--dim">+ End</button>
+          </div>
+        </div>
+
+        <div class="script__divider"></div>
+
+        <textarea class="script__input" rows="2" readonly>Six AM, alarm rings, protagonist opens eyes, the sky outside still dark</textarea>
+
+        <div class="script__hints">
+          <span class="script__hint">Dawn, gets up from bed...</span>
+          <span class="script__hint">Street, walks against crowd...</span>
+        </div>
+      </div>
+
+      <div class="script__shot">
+        <div class="script__shot-head">
+          <span class="script__shot-num">S C E N E &nbsp; 2</span>
+          <div class="script__shot-char">
+            <div class="avatar">G</div>
+            <span>ghostpixel</span>
+            <span class="script__shot-char-arrow">▾</span>
+          </div>
+        </div>
+
+        <div class="script__frames">
+          <div class="script__frame-col">
+            <div class="script__frame">
+              <span class="script__frame-icon">+</span>
+              <span class="script__frame-label">Start</span>
+            </div>
+            <button class="script__frame-btn">✦ Generate Start</button>
+          </div>
+          <span class="script__frame-arrow">→</span>
+          <div class="script__frame-col">
+            <div class="script__frame">
+              <span class="script__frame-icon">+</span>
+              <span class="script__frame-label">End</span>
+            </div>
+            <button class="script__frame-btn script__frame-btn--dim">+ End</button>
+          </div>
+        </div>
+        <button class="script__use-prev">← Use Prev End</button>
+
+        <div class="script__divider"></div>
+
+        <textarea class="script__input" rows="2" readonly>Crowded subway, protagonist squeezed into corner, gripping handrail</textarea>
+
+        <div class="script__hints">
+          <span class="script__hint">Cafe, lifts the coffee cup...</span>
+          <span class="script__hint">Late night, sits on steps...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="script__footer">
+      <button class="btn-main">Action! Generate 4 shots</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAGE 3: GENERATING -->
+<div class="phone-wrap">
+  <div class="phone-label">Generating</div>
+  <div class="phone gen">
+    <div class="gen__header">
+      <button class="gen__back">←</button>
+    </div>
+
+    <div class="gen__center">
+      <div class="gen__icon">🎬</div>
+      <div class="gen__title">Filming Your Short</div>
+      <div class="gen__sub">Each shot takes about 2-3 minutes</div>
+    </div>
+
+    <div class="gen__progress">
+      <div class="gen__bar">
+        <div class="gen__bar-fill"></div>
+      </div>
+      <div class="gen__bar-label">02 / 04</div>
+    </div>
+
+    <div class="gen__filmstrip">
+      <div class="gen__film-cell gen__film-cell--done">
+        <div style="width:100%;height:100%;background:linear-gradient(135deg,#302f2c,#262625)"></div>
+        <div class="gen__film-check">✓</div>
+      </div>
+      <div class="gen__film-cell gen__film-cell--active">
+        <div class="gen__film-spinner"></div>
+      </div>
+      <div class="gen__film-cell">
+        <span class="gen__film-cell-num">3</span>
+      </div>
+      <div class="gen__film-cell">
+        <span class="gen__film-cell-num">4</span>
+      </div>
+    </div>
+
+    <div class="gen__preview">
+      <div class="gen__preview-inner">
+        <div class="gen__preview-spinner"></div>
+        <div class="gen__preview-text">Generating shot 2...</div>
+      </div>
+    </div>
+
+    <div class="gen__prompt-text">
+      Crowded subway car, protagonist squeezed into a corner,<br>gripping handrail, reading work messages on phone
+    </div>
+
+    <div class="gen__footer">
+      <button class="btn-main">Preview</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAGE 4: THEATER -->
+<div class="phone-wrap">
+  <div class="phone-label">Theater</div>
+  <div class="phone theater">
+    <div class="theater__video-bg">
+      <div class="theater__video-placeholder">▶</div>
+    </div>
+
+    <div class="theater__overlay">
+      <div class="theater__top">
+        <button class="theater__back">←</button>
+        <div class="theater__char">
+          <div class="avatar" style="width:32px;height:32px;border:1.5px solid rgba(191,173,136,0.25);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--accent);font-weight:700;font-family:var(--font-serif)">G</div>
+          <span class="theater__char-name">ghostpixel</span>
+        </div>
+        <span class="theater__counter">02 / 04</span>
+      </div>
+
+      <div class="theater__indicator">
+        <span class="theater__scene-label">S C E N E</span>
+        <div class="theater__scene-row">
+          <span class="theater__scene-num">02</span>
+          <span class="theater__scene-sep">/</span>
+          <span class="theater__scene-total">04</span>
+        </div>
+        <div class="theater__scene-line"></div>
+      </div>
+
+      <div class="theater__bottom">
+        <p class="theater__prompt">Crowded subway, protagonist squeezed into a corner</p>
+
+        <div class="theater__segs">
+          <div class="theater__seg theater__seg--played"></div>
+          <div class="theater__seg theater__seg--active"></div>
+          <div class="theater__seg"></div>
+          <div class="theater__seg"></div>
+        </div>
+
+        <div class="theater__actions">
+          <button class="theater__action theater__action--regen">Regenerate</button>
+          <button class="theater__action theater__action--share">Share</button>
+          <button class="theater__action theater__action--restart">Re-Direct</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAGE 5: WORKS -->
+<div class="phone-wrap">
+  <div class="phone-label">Works</div>
+  <div class="phone works">
+    <div class="works__header">
+      <button class="works__back">←</button>
+      <span class="works__title">My Works</span>
+    </div>
+
+    <div class="scrollable">
+      <div class="works__list">
+        <div class="works__card">
+          <div class="works__card-cover">
+            <div style="width:100%;height:100%;background:linear-gradient(150deg,#302f2c,#282828)"></div>
+            <div class="works__card-play">
+              <div class="works__card-play-icon">▶</div>
+            </div>
+            <div class="works__card-badge works__card-badge--done">4 shots done</div>
+          </div>
+          <div class="works__card-info">
+            <div class="works__card-meta">
+              <div class="avatar" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent);font-weight:700;font-family:var(--font-serif)">G</div>
+              <div class="works__card-meta-text">
+                <span class="works__card-name">ghostpixel</span>
+                <span class="works__card-detail">City Hustle · 4/9 13:32</span>
+              </div>
+            </div>
+            <div class="works__card-actions">
+              <button class="works__card-action" title="Share">↗</button>
+              <button class="works__card-action" title="Delete" style="color:var(--accent-red)">×</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="works__card">
+          <div class="works__card-cover">
+            <div style="width:100%;height:100%;background:linear-gradient(150deg,#2a2a2c,#262628)"></div>
+            <div class="works__card-play">
+              <div class="works__card-play-icon" style="border-color:rgba(191,168,120,0.35)">⟳</div>
+            </div>
+            <div class="works__card-badge works__card-badge--progress">In progress 2/4</div>
+            <div class="works__card-progress">
+              <div class="works__card-progress-fill" style="width:50%"></div>
+            </div>
+          </div>
+          <div class="works__card-info">
+            <div class="works__card-meta">
+              <div class="avatar" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent);font-weight:700;font-family:var(--font-serif)">G</div>
+              <div class="works__card-meta-text">
+                <span class="works__card-name">ghostpixel</span>
+                <span class="works__card-detail">Midnight Diner · 4/9 13:03</span>
+              </div>
+            </div>
+            <div class="works__card-actions">
+              <button class="works__card-action" style="color:var(--accent-green)">→</button>
+              <button class="works__card-action" style="color:var(--accent-red)">×</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="works__card">
+          <div class="works__card-cover">
+            <div style="width:100%;height:100%;background:linear-gradient(150deg,#2e2c2a,#282726)"></div>
+            <div class="works__card-play">
+              <div class="works__card-play-icon">▶</div>
+            </div>
+            <div class="works__card-badge works__card-badge--done">3 shots done</div>
+          </div>
+          <div class="works__card-info">
+            <div class="works__card-meta">
+              <div class="avatar" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent);font-weight:700;font-family:var(--font-serif)">G</div>
+              <div class="works__card-meta-text">
+                <span class="works__card-name">ghostpixel</span>
+                <span class="works__card-detail">City Romance · 4/9 12:34</span>
+              </div>
+            </div>
+            <div class="works__card-actions">
+              <button class="works__card-action">↗</button>
+              <button class="works__card-action" style="color:var(--accent-red)">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -273,12 +273,12 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
               <div className="ad-shot__header-row">
                 <span className="ad-shot__num">SCENE {i + 1}</span>
                 {shots.length > 1 && (
-                  <button className="ad-shot__remove" onPointerDown={() => removeShot(shot.id)}>✕</button>
+                  <button className="ad-shot__remove" onClick={() => removeShot(shot.id)}>✕</button>
                 )}
               </div>
               <div
                 className={`ad-shot__char-badge${isInherited ? ' ad-shot__char-badge--inherited' : ''}`}
-                onPointerDown={() => setCharSelectFor(shot.id)}
+                onClick={() => setCharSelectFor(shot.id)}
               >
                 <div className="ad-shot__char-badge-avatar">
                   {char?.head_url
@@ -337,7 +337,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                         </div>
                         <button
                           className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
-                          onPointerDown={() => {
+                          onClick={() => {
                             if (!busy) {
                               const shotChar = resolveShotChar(shot, shots, defaultCharacter);
                               generateFrame(shot.id, shot.prompt, type, shotChar, { cancelled: false });
@@ -357,7 +357,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
               {showUsePrev && (
                 <button
                   className="ad-shot__use-prev"
-                  onPointerDown={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
+                  onClick={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
                 >
                   &larr; {t('script.usePrevEnd')}
                 </button>
@@ -380,7 +380,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
               />
               <div className="ad-shot__hints">
                 {SHOT_PRESETS.slice(i * 2, i * 2 + 2).map(p => (
-                  <span key={p} className="ad-shot__hint" onPointerDown={() => updatePrompt(shot.id, p)}>
+                  <span key={p} className="ad-shot__hint" onClick={() => updatePrompt(shot.id, p)}>
                     {p}
                   </span>
                 ))}
@@ -391,7 +391,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
         })}
 
         {shots.length < 8 && (
-          <button className="ad-add-shot" onPointerDown={addShot}>
+          <button className="ad-add-shot" onClick={addShot}>
             {t('script.addShot')}({shots.length}/8)
           </button>
         )}
