@@ -21,7 +21,7 @@ export interface Shot {
   error?: string;
 }
 
-export type Phase = 'home' | 'script' | 'generating' | 'theater' | 'works';
+export type Phase = 'home' | 'script' | 'generating' | 'theater' | 'works' | 'loading';
 
 export type TemplateCategory = 'all' | 'life' | 'emotion' | 'journey' | 'genre';
 

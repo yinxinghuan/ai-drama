@@ -39,7 +39,9 @@ function buildPrompt(userPrompt: string, character: Character | null): string {
 export default function Drama() {
   const aigram = useAigram();
   const { submitScore } = useGameScore('ai-drama');
-  const [phase, setPhase] = useState<Phase>('home');
+  // Detect share link synchronously to avoid flashing home page
+  const hasShareParam = new URLSearchParams(window.location.search).has('work');
+  const [phase, setPhase] = useState<Phase>(hasShareParam ? 'loading' : 'home');
   const [prevPhase, setPrevPhase] = useState<Phase>('generating');
   const [genBackPhase, setGenBackPhase] = useState<Phase>('home');
   const [defaultCharacter, setDefaultCharacter] = useState<Character | null>(null);
@@ -61,22 +63,17 @@ export default function Drama() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const workId = params.get('work');
-    if (!workId) return;
+    if (!workId) { if (phase === 'loading') setPhase('home'); return; }
     const shareUid = params.get('uid');
 
     (async () => {
       try {
-        let works;
-        if (shareUid) {
-          works = await loadWorksRemote(shareUid);
-        } else {
-          works = loadWorksLocal();
-        }
+        const works = shareUid ? await loadWorksRemote(shareUid) : loadWorksLocal();
         const work = works.find(w => w.id === workId);
-        if (!work) return;
-
-        const playable = work.shots.filter(s => s.status === 'done' && s.videoUrl);
-        if (playable.length === 0) return;
+        if (!work || work.shots.filter(s => s.status === 'done' && s.videoUrl).length === 0) {
+          setPhase('home');
+          return;
+        }
 
         setDefaultCharacter(work.character);
         currentWorkId.current = work.id;
@@ -85,12 +82,11 @@ export default function Drama() {
         setIsShareMode(true);
         setPrevPhase('home');
         setPhase('theater');
-
-        // Clean URL
-        window.history.replaceState({}, '', window.location.pathname);
       } catch {
-        // fallback: ignore and show home
+        setPhase('home');
       }
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -290,6 +286,11 @@ export default function Drama() {
 
   return (
     <div className="ad-root">
+      {phase === 'loading' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: 14 }}>
+          Loading…
+        </div>
+      )}
       {phase === 'home' && (
         <HomePage
           aigram={aigram}
