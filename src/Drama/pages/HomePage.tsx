@@ -59,10 +59,10 @@ export default function HomePage({
         <button className="ad-home__works-btn" onPointerDown={onOpenWorks}>{t('app.myWorks')}</button>
       </div>
 
-      <div className="ad-home__hero" onPointerDown={onFreeCreate}>
+      <div className="ad-home__hero" onClick={onFreeCreate}>
         <div
           className="ad-home__hero-avatar"
-          onPointerDown={(e) => { e.stopPropagation(); setShowCharSelect(true); }}
+          onClick={(e) => { e.stopPropagation(); setShowCharSelect(true); }}
         >
           {defaultCharacter?.head_url
             ? <img src={defaultCharacter.head_url} alt={defaultCharacter.name} draggable={false} />
@@ -85,7 +85,7 @@ export default function HomePage({
           <button
             key={cat.key}
             className={`ad-home__tab${activeTab === cat.key ? ' ad-home__tab--active' : ''}`}
-            onPointerDown={() => setActiveTab(cat.key)}
+            onClick={() => setActiveTab(cat.key)}
           >
             {cat.label}
           </button>
@@ -94,7 +94,7 @@ export default function HomePage({
 
       <div className="ad-home__scroll">
         <div className="ad-home__grid">
-          <div className="ad-home__card" onPointerDown={onFreeCreate}>
+          <div className="ad-home__card" onClick={onFreeCreate}>
             <img className="ad-home__card-img" src={freeCreateCover} alt="Free Create" draggable={false} />
             <div className="ad-home__card-overlay">
               <div className="ad-home__card-title">{t('home.freeCreate')}</div>
@@ -105,7 +105,7 @@ export default function HomePage({
             <div
               key={tmpl.id}
               className="ad-home__card"
-              onPointerDown={() => onSelectTemplate(tmpl)}
+              onClick={() => onSelectTemplate(tmpl)}
             >
               {tmpl.preview
                 ? <img className="ad-home__card-img" src={tmpl.preview} alt={tmpl.label} draggable={false} />
