@@ -34,7 +34,8 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
 
   const handleShare = useCallback((workId: string) => {
     const base = window.location.origin + '/ai-drama/';
-    const url = `${base}?work=${workId}`;
+    const params = uid ? `?work=${workId}&uid=${uid}` : `?work=${workId}`;
+    const url = `${base}${params}`;
     navigator.clipboard.writeText(url).then(() => {
       sfxSuccess();
       setCopiedId(workId);

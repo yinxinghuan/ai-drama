@@ -4,7 +4,7 @@ import type { Character, Shot, Phase, Work, DramaTemplate } from './types';
 import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage, enhancePrompt, rehostImage } from './utils/imageApi';
 import { submitVideo, pollVideoTask, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
-import { saveWork } from './utils/works';
+import { saveWork, loadWorksLocal, loadWorksRemote } from './utils/works';
 import { useGameScore } from '@shared/leaderboard';
 import HomePage from './pages/HomePage';
 import ScriptPage from './pages/ScriptPage';
@@ -55,6 +55,42 @@ export default function Drama() {
       setDefaultCharacter(aigram.me);
     }
   }, [aigram.me, defaultCharacter]);
+
+  // ── Deep-link: ?work=<id>&uid=<uid> → load and play ──────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const workId = params.get('work');
+    if (!workId) return;
+    const shareUid = params.get('uid');
+
+    (async () => {
+      try {
+        let works;
+        if (shareUid) {
+          works = await loadWorksRemote(shareUid);
+        } else {
+          works = loadWorksLocal();
+        }
+        const work = works.find(w => w.id === workId);
+        if (!work) return;
+
+        const playable = work.shots.filter(s => s.status === 'done' && s.videoUrl);
+        if (playable.length === 0) return;
+
+        setDefaultCharacter(work.character);
+        currentWorkId.current = work.id;
+        currentCharacter.current = work.character;
+        setShots(work.shots);
+        setPrevPhase('home');
+        setPhase('theater');
+
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch {
+        // fallback: ignore and show home
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goTheater = (from: Phase) => { setPrevPhase(from); setPhase('theater'); };
 
