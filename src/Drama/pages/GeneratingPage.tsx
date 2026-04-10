@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { t } from '../i18n';
 import type { Shot } from '../types';
 import './GeneratingPage.less';
@@ -26,6 +26,21 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
   // Single shot video preview
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // Track which filmstrip cell is selected for the center preview
+  const activeGeneratingIndex = useMemo(() => {
+    const idx = active.findIndex(s => ['imaging', 'waiting', 'generating'].includes(s.status));
+    return idx >= 0 ? idx : null;
+  }, [active]);
+
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+
+  // Auto-follow the currently generating shot
+  useEffect(() => {
+    if (activeGeneratingIndex !== null) {
+      setSelectedIndex(activeGeneratingIndex);
+    }
+  }, [activeGeneratingIndex]);
+
   useEffect(() => {
     if (!allSettled || successShots.length === 0) return;
     setLoadedCount(0);
@@ -40,6 +55,9 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
   }, [allSettled]);
 
   const progress = active.length > 0 ? Math.round((doneCount / active.length) * 100) : 0;
+  const selectedShot = active[selectedIndex] ?? active[0];
+
+  const padNum = (n: number) => String(n).padStart(2, '0');
 
   return (
     <div className="ad-gen">
@@ -63,51 +81,86 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
         <div className="ad-gen__bar">
           <div className="ad-gen__bar-fill" style={{ width: `${progress}%` }} />
         </div>
-        <span className="ad-gen__bar-label">{successShots.length} / {active.length}</span>
+        <div className="ad-gen__bar-label">{padNum(successShots.length)} / {padNum(active.length)}</div>
       </div>
 
-      {/* Shot list */}
-      <div className="ad-gen__shots">
-        {active.map((shot, i) => (
-          <div key={shot.id} className={`ad-gen__shot ad-gen__shot--${shot.status}`}>
-            {/* Thumbnail for completed shots */}
-            {shot.status === 'done' && shot.videoUrl ? (
-              <div className="ad-gen__shot-thumb" onPointerDown={() => setPreviewUrl(shot.videoUrl!)}>
-                {shot.startImageUrl
-                  ? <img src={shot.startImageUrl} draggable={false} />
-                  : <div className="ad-gen__shot-thumb-empty">▶</div>
-                }
-                <span className="ad-gen__shot-thumb-play">▶</span>
-              </div>
-            ) : null}
+      {/* Filmstrip row */}
+      <div className="ad-gen__filmstrip">
+        {active.map((shot, i) => {
+          const isActive = ['imaging', 'waiting', 'generating'].includes(shot.status);
+          const isDone = shot.status === 'done';
+          const isError = shot.status === 'error';
+          const cellClass = [
+            'ad-gen__film-cell',
+            isActive ? 'ad-gen__film-cell--active' : '',
+            isDone ? 'ad-gen__film-cell--done' : '',
+            isError ? 'ad-gen__film-cell--error' : '',
+          ].filter(Boolean).join(' ');
 
-            <div className="ad-gen__shot-body">
-              <div className="ad-gen__shot-num">{t('script.shot')} {i + 1}</div>
-              <div className="ad-gen__shot-prompt">{shot.prompt}</div>
-            </div>
-
-            <div className="ad-gen__shot-status">
-              {shot.status === 'idle'      && <span className="ad-gen__dot ad-gen__dot--wait" />}
-              {shot.status === 'imaging'   && <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">{t('gen.imaging')}</span></>}
-              {shot.status === 'waiting'   && <><span className="ad-gen__cooldown">{shot.waitSeconds ?? 0}s</span><span className="ad-gen__step-label">{t('gen.cooldown')}</span></>}
-              {shot.status === 'generating'&& <><span className="ad-gen__spinner" /><span className="ad-gen__step-label">{t('gen.videoGen')}</span></>}
-              {shot.status === 'done'      && <span className="ad-gen__check">✓</span>}
-              {shot.status === 'error'     && (
-                <div className="ad-gen__shot-err-wrap">
-                  {shot.error && <span className="ad-gen__shot-err-msg">{shot.error}</span>}
-                  <button
-                    className="ad-gen__regen-btn"
-                    onPointerDown={() => onRegen(shot.id)}
-                    disabled={isGenerating}
-                  >
-                    {t('gen.regen')}
-                  </button>
-                </div>
+          return (
+            <div
+              key={shot.id}
+              className={cellClass}
+              onPointerDown={() => {
+                setSelectedIndex(i);
+                if (isDone && shot.videoUrl) setPreviewUrl(shot.videoUrl);
+              }}
+            >
+              {isDone && shot.startImageUrl ? (
+                <>
+                  <img className="ad-gen__film-thumb" src={shot.startImageUrl} draggable={false} />
+                  <div className="ad-gen__film-check">✓</div>
+                </>
+              ) : isActive ? (
+                <div className="ad-gen__film-spinner" />
+              ) : (
+                <span className="ad-gen__film-cell-num">{i + 1}</span>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* Center preview area */}
+      {selectedShot && (
+        <>
+          <div className="ad-gen__preview">
+            {['imaging', 'waiting', 'generating'].includes(selectedShot.status) ? (
+              <div className="ad-gen__preview-inner">
+                <span className="ad-gen__preview-shot-num">{String(selectedIndex + 1).padStart(2, '0')}</span>
+                <div className="ad-gen__preview-spinner" />
+                <div className="ad-gen__preview-text">
+                  {selectedShot.status === 'imaging' && t('gen.imaging')}
+                  {selectedShot.status === 'waiting' && `${t('gen.cooldown')} ${selectedShot.waitSeconds ?? 0}s`}
+                  {selectedShot.status === 'generating' && t('gen.videoGen')}
+                </div>
+              </div>
+            ) : selectedShot.status === 'done' && selectedShot.startImageUrl ? (
+              <img className="ad-gen__preview-img" src={selectedShot.startImageUrl} draggable={false} />
+            ) : selectedShot.status === 'error' ? (
+              <div className="ad-gen__preview-inner">
+                {selectedShot.error && <span className="ad-gen__shot-err-msg">{selectedShot.error}</span>}
+                <button
+                  className="ad-gen__regen-btn"
+                  onPointerDown={() => onRegen(selectedShot.id)}
+                  disabled={isGenerating}
+                >
+                  {t('gen.regen')}
+                </button>
+              </div>
+            ) : (
+              <div className="ad-gen__preview-inner">
+                <span className="ad-gen__preview-shot-num">{String(selectedIndex + 1).padStart(2, '0')}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Current shot prompt */}
+          {selectedShot.prompt && (
+            <div className="ad-gen__prompt-text">{selectedShot.prompt}</div>
+          )}
+        </>
+      )}
 
       {/* Footer */}
       <div className="ad-gen__footer">

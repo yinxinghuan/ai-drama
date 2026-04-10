@@ -19,6 +19,10 @@ const dict: Record<string, { zh: string; en: string }> = {
   'home.genBanner':       { zh: '拍摄进行中… 点击查看进度', en: 'Filming in progress… Tap to check' },
   'home.freeCreate':      { zh: '✦ 自由创作', en: '✦ Free Create' },
   'home.freeCreateDesc':  { zh: '从零开始，写你自己的剧本', en: 'Start from scratch, write your own script' },
+  'home.director':        { zh: 'DIRECTOR', en: 'DIRECTOR' },
+  'home.heroTitle':       { zh: '开始你的故事', en: 'Start Your Story' },
+  'home.heroSub':         { zh: '选择角色，写你的剧本', en: 'Choose a character, write your script' },
+  'home.inspiration':     { zh: '剧本灵感', en: 'Script Inspiration' },
 
   // ── ScriptPage ──────────────────────────────────────────────────────────
   'script.title':         { zh: '剧本编辑', en: 'Script Editor' },
@@ -66,6 +70,10 @@ const dict: Record<string, { zh: string; en: string }> = {
   'theater.regenFailed':  { zh: '重拍镜头', en: 'Redo Shot' },
   'theater.failed':       { zh: '失败', en: 'failed' },
   'theater.reDirector':   { zh: '重新导演', en: 'Re-Direct' },
+  'theater.share':        { zh: '分享', en: 'Share' },
+  'gen.noChar':           { zh: '请先选择一个角色', en: 'Please select a character first' },
+  'charsel.noChar':       { zh: '不用角色', en: 'No Character' },
+  'charsel.noCharDesc':   { zh: '不指定角色形象', en: 'Generate without a character reference' },
 
   // ── WorksPage ───────────────────────────────────────────────────────────
   'works.loading':        { zh: '加载中…', en: 'Loading…' },
@@ -75,6 +83,8 @@ const dict: Record<string, { zh: string; en: string }> = {
   'works.inProgress':     { zh: '生成中…', en: 'In progress…' },
   'works.pending':        { zh: '待完成', en: ' pending' },
   'works.delete':         { zh: '删除', en: 'Delete' },
+  'works.share':          { zh: '分享', en: 'Share' },
+  'works.copied':         { zh: '已复制', en: 'Copied' },
 
   // ── CharacterSelect ────────────────────────────────────────────────────
   'charsel.title':        { zh: '选择角色', en: 'Select Character' },

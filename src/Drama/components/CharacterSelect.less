@@ -1,8 +1,10 @@
-@accent: #a78bfa;
-@bg-card: rgba(255, 255, 255, 0.05);
-@border: rgba(255, 255, 255, 0.1);
-@text: #e8e8f0;
-@text-dim: #9090b0;
+@accent: #bfad88;
+@bg-card: rgba(240, 236, 224, 0.045);
+@border: rgba(240, 236, 224, 0.09);
+@text: #dedad0;
+@text-cream: #ccc8bc;
+@text-dim: #8a8680;
+@font-serif-cn: 'Noto Serif SC', 'STSong', 'SimSun', serif;
 
 .ad-charsel {
   position: absolute;
@@ -27,7 +29,7 @@
     max-height: 80%;
     display: flex;
     flex-direction: column;
-    background: #1a1a2e;
+    background: #2c2c2a;
     border: 1px solid @border;
     border-radius: 18px;
     overflow: hidden;
@@ -41,6 +43,7 @@
     color: @text;
     border-bottom: 1px solid @border;
     flex-shrink: 0;
+    font-family: @font-serif-cn;
   }
 
   &__body {
@@ -77,13 +80,13 @@
 
     &--active {
       border-color: @accent;
-      background: rgba(167, 139, 250, 0.08);
+      background: rgba(191, 173, 136, 0.08);
     }
 
     &--pending {
       border-color: @accent;
       border-style: dashed;
-      background: rgba(167, 139, 250, 0.05);
+      background: rgba(191, 173, 136, 0.04);
     }
   }
 
@@ -92,7 +95,7 @@
     height: 44px;
     border-radius: 50%;
     overflow: hidden;
-    background: rgba(167, 139, 250, 0.15);
+    background: rgba(191, 173, 136, 0.12);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -112,11 +115,29 @@
     color: @accent;
   }
 
+  &__avatar--none {
+    background: rgba(222, 218, 208, 0.08);
+    border: 1px dashed rgba(222, 218, 208, 0.15);
+  }
+
+  &__name-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
   &__name {
     font-size: 15px;
     font-weight: 600;
     color: @text;
     flex: 1;
+  }
+
+  &__desc {
+    font-size: 11px;
+    color: @text-dim;
   }
 
   &__check {
@@ -137,12 +158,14 @@
     padding: 12px;
     border-radius: 12px;
     border: none;
-    background: linear-gradient(135deg, #a78bfa, #60a5fa);
-    color: #fff;
+    background: @accent;
+    color: #28282a;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s;
+    &:active { transform: scale(0.97); }
 
     &--disabled {
       background: @bg-card;

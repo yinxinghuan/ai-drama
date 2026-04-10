@@ -3,6 +3,12 @@ import { t } from '../i18n';
 import type { Character } from '../types';
 import './CharacterSelect.less';
 
+const NO_CHAR: Character = {
+  telegram_id: '__none__',
+  name: '',
+  head_url: '',
+};
+
 interface Props {
   characters: Character[];
   current: Character | null;
@@ -12,17 +18,16 @@ interface Props {
 
 export default function CharacterSelect({ characters, current, onPick, onClose }: Props) {
   const [pendingId, setPendingId] = useState<string>(current?.telegram_id ?? '');
-  const pendingChar = characters.find(c => c.telegram_id === pendingId) ?? current;
+  const isNone = pendingId === '__none__';
+  const pendingChar = isNone ? NO_CHAR : (characters.find(c => c.telegram_id === pendingId) ?? current);
   const isChanged = pendingId !== (current?.telegram_id ?? '');
 
-  function handleSelect(char: Character) {
-    if (char.telegram_id !== pendingId) {
-      setPendingId(char.telegram_id);
-    }
+  function handleSelect(id: string) {
+    if (id !== pendingId) setPendingId(id);
   }
 
   function handleConfirm() {
-    if (pendingChar) onPick(pendingChar);
+    if (pendingChar && isChanged) onPick(pendingChar);
   }
 
   return (
@@ -33,6 +38,25 @@ export default function CharacterSelect({ characters, current, onPick, onClose }
 
         <div className="ad-charsel__body">
           <div className="ad-charsel__list">
+            {/* No character option */}
+            <div
+              className={[
+                'ad-charsel__item',
+                !current ? 'ad-charsel__item--active' : '',
+                isNone && isChanged ? 'ad-charsel__item--pending' : '',
+              ].join(' ').trim()}
+              onPointerDown={() => handleSelect('__none__')}
+            >
+              <div className="ad-charsel__avatar ad-charsel__avatar--none">
+                <span className="ad-charsel__initials">✦</span>
+              </div>
+              <div className="ad-charsel__name-col">
+                <div className="ad-charsel__name">{t('charsel.noChar')}</div>
+                <div className="ad-charsel__desc">{t('charsel.noCharDesc')}</div>
+              </div>
+              {!current && <div className="ad-charsel__check">✓</div>}
+            </div>
+
             {characters.map(char => {
               const isConfirmed = char.telegram_id === (current?.telegram_id ?? '');
               const isPending = char.telegram_id === pendingId && isChanged;
@@ -45,7 +69,7 @@ export default function CharacterSelect({ characters, current, onPick, onClose }
                     isConfirmed ? 'ad-charsel__item--active' : '',
                     isPending ? 'ad-charsel__item--pending' : '',
                   ].join(' ').trim()}
-                  onPointerDown={() => handleSelect(char)}
+                  onPointerDown={() => handleSelect(char.telegram_id)}
                 >
                   <div className="ad-charsel__avatar">
                     {char.head_url
@@ -65,7 +89,9 @@ export default function CharacterSelect({ characters, current, onPick, onClose }
             className={`ad-charsel__confirm${isChanged ? '' : ' ad-charsel__confirm--disabled'}`}
             onPointerDown={isChanged ? handleConfirm : undefined}
           >
-            {isChanged ? `${t('charsel.confirm')}: ${pendingChar?.name ?? ''}` : t('charsel.confirmed')}
+            {isChanged
+              ? `${t('charsel.confirm')}: ${isNone ? t('charsel.noChar') : (pendingChar?.name ?? '')}`
+              : t('charsel.confirmed')}
           </button>
         </div>
       </div>

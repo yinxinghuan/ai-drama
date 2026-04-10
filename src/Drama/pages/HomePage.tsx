@@ -52,21 +52,32 @@ export default function HomePage({
       )}
 
       <div className="ad-home__header">
-        <img src="/ai-drama/img/aigram.svg" className="ad-home__logo" alt="aigram" />
-        <span className="ad-home__title">{t('app.title')}</span>
+        <div className="ad-home__logo">
+          <div className="ad-home__logo-mark">Ai</div>
+          <span className="ad-home__logo-text">{t('app.title')}</span>
+        </div>
         <button className="ad-home__works-btn" onPointerDown={onOpenWorks}>{t('app.myWorks')}</button>
       </div>
 
-      <div className="ad-home__char-row" onClick={() => setShowCharSelect(true)}>
-        <div className="ad-home__char-avatar">
+      <div className="ad-home__hero" onPointerDown={onFreeCreate}>
+        <div
+          className="ad-home__hero-avatar"
+          onPointerDown={(e) => { e.stopPropagation(); setShowCharSelect(true); }}
+        >
           {defaultCharacter?.head_url
             ? <img src={defaultCharacter.head_url} alt={defaultCharacter.name} draggable={false} />
             : <span>{charInitials}</span>}
         </div>
-        <span className="ad-home__char-name">
-          {defaultCharacter?.name || t('home.selectChar')}
-        </span>
-        <span className="ad-home__char-hint">{t('home.defaultChar')}</span>
+        <div className="ad-home__hero-content">
+          <div className="ad-home__hero-label">{t('home.director')}</div>
+          <div className="ad-home__hero-title">{t('home.heroTitle')}</div>
+          <div className="ad-home__hero-sub">{t('home.heroSub')}</div>
+          <div className="ad-home__hero-cta">{t('home.freeCreate')} →</div>
+        </div>
+      </div>
+
+      <div className="ad-home__section">
+        <span className="ad-home__section-title">{t('home.inspiration')}</span>
       </div>
 
       <div className="ad-home__tabs">
@@ -83,11 +94,10 @@ export default function HomePage({
 
       <div className="ad-home__scroll">
         <div className="ad-home__grid">
-          <div className="ad-home__card" onClick={onFreeCreate}>
-            <img className="ad-home__card-img" src={freeCreateCover} alt="自由创作" draggable={false} />
-            <div className="ad-home__card-info">
-              <span className="ad-home__card-label">{t('home.freeCreate')}</span>
-              <span className="ad-home__card-desc">{t('home.freeCreateDesc')}</span>
+          <div className="ad-home__card" onPointerDown={onFreeCreate}>
+            <img className="ad-home__card-img" src={freeCreateCover} alt="Free Create" draggable={false} />
+            <div className="ad-home__card-overlay">
+              <div className="ad-home__card-title">{t('home.freeCreate')}</div>
             </div>
           </div>
 
@@ -95,14 +105,14 @@ export default function HomePage({
             <div
               key={tmpl.id}
               className="ad-home__card"
-              onClick={() => onSelectTemplate(tmpl)}
+              onPointerDown={() => onSelectTemplate(tmpl)}
             >
               {tmpl.preview
                 ? <img className="ad-home__card-img" src={tmpl.preview} alt={tmpl.label} draggable={false} />
-                : <div className="ad-home__card-placeholder">{tmpl.label}</div>}
-              <div className="ad-home__card-info">
-                <span className="ad-home__card-label">{tmpl.label}</span>
-                <span className="ad-home__card-desc">{tmpl.shots[0]}</span>
+                : <div className="ad-home__card-placeholder">{tmpl.label.slice(0, 2)}</div>}
+              <div className="ad-home__card-overlay">
+                <div className="ad-home__card-title">{tmpl.label}</div>
+                <div className="ad-home__card-cat">{tmpl.category}</div>
               </div>
             </div>
           ))}
