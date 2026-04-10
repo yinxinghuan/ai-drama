@@ -61,7 +61,7 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
             const firstVideo = firstShot?.videoUrl;
             const thumbPoster = firstShot?.startImageUrl;
             return (
-              <div key={work.id} className="ad-work-card" onPointerDown={() => onOpen(work)}>
+              <div key={work.id} className="ad-work-card" onClick={() => onOpen(work)}>
                 {/* Thumbnail */}
                 <div className="ad-work-card__thumb">
                   {firstVideo
@@ -93,7 +93,7 @@ export default function WorksPage({ uid, onBack, onOpen }: Props) {
                   <div className="ad-work-card__actions">
                     <button
                       className="ad-work-card__btn ad-work-card__btn--del"
-                      onPointerDown={e => { e.stopPropagation(); handleDelete(work.id); }}
+                      onClick={e => { e.stopPropagation(); handleDelete(work.id); }}
                     >{t('works.delete')}</button>
                   </div>
                 </div>
