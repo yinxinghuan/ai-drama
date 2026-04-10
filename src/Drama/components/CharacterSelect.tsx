@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { t } from '../i18n';
 import type { Character } from '../types';
+import { sfxTap, sfxConfirm, sfxNav } from '../utils/sounds';
 import './CharacterSelect.less';
 
 const NO_CHAR: Character = {
@@ -23,16 +24,16 @@ export default function CharacterSelect({ characters, current, onPick, onClose }
   const isChanged = pendingId !== (current?.telegram_id ?? '');
 
   function handleSelect(id: string) {
-    if (id !== pendingId) setPendingId(id);
+    if (id !== pendingId) { sfxTap(); setPendingId(id); }
   }
 
   function handleConfirm() {
-    if (pendingChar && isChanged) onPick(pendingChar);
+    if (pendingChar && isChanged) { sfxConfirm(); onPick(pendingChar); }
   }
 
   return (
     <div className="ad-charsel">
-      <div className="ad-charsel__overlay" onPointerDown={onClose} />
+      <div className="ad-charsel__overlay" onPointerDown={() => { sfxNav(); onClose(); }} />
       <div className="ad-charsel__dialog">
         <div className="ad-charsel__title">{t('charsel.title')}</div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { t } from '../i18n';
 import type { Shot } from '../types';
+import { sfxTap, sfxConfirm, sfxNav } from '../utils/sounds';
 import './GeneratingPage.less';
 
 interface Props {
@@ -62,7 +63,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
   return (
     <div className="ad-gen">
       <div className="ad-gen__header">
-        <button className="ad-gen__back" onPointerDown={onBack}>&larr;</button>
+        <button className="ad-gen__back" onPointerDown={() => { sfxNav(); onBack(); }}>&larr;</button>
       </div>
 
       <div className="ad-gen__top">
@@ -102,6 +103,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
               key={shot.id}
               className={cellClass}
               onClick={() => {
+                sfxTap();
                 setSelectedIndex(i);
                 if (isDone && shot.videoUrl) setPreviewUrl(shot.videoUrl);
               }}
@@ -142,7 +144,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
                 {selectedShot.error && <span className="ad-gen__shot-err-msg">{selectedShot.error}</span>}
                 <button
                   className="ad-gen__regen-btn"
-                  onClick={() => onRegen(selectedShot.id)}
+                  onClick={() => { sfxTap(); onRegen(selectedShot.id); }}
                   disabled={isGenerating}
                 >
                   {t('gen.regen')}
@@ -166,7 +168,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
       <div className="ad-gen__footer">
         {/* Continue button — when there are remaining shots and nothing generating */}
         {!isGenerating && hasRemaining && (
-          <button className="ad-gen__continue-btn" onPointerDown={onContinue}>
+          <button className="ad-gen__continue-btn" onPointerDown={() => { sfxConfirm(); onContinue(); }}>
             {t('gen.continue')}（{active.filter(s => s.status === 'idle' || s.status === 'error').length} {t('script.shots')}）
           </button>
         )}
@@ -175,7 +177,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
         {successShots.length > 0 && (
           <button
             className={`ad-gen__preview-btn${allPreloaded ? '' : ' ad-gen__preview-btn--loading'}`}
-            onPointerDown={allPreloaded ? onPreview : undefined}
+            onPointerDown={allPreloaded ? () => { sfxConfirm(); onPreview(); } : undefined}
             disabled={!allPreloaded}
           >
             {allPreloaded

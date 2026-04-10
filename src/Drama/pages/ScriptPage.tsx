@@ -6,6 +6,7 @@ import type { AigramState } from '../hooks/useAigram';
 import { SHOT_PRESETS } from '../utils/presets';
 import { generateSceneImage, subscribeCooldown, uploadImage, suggestNextShot, generateEndFramePrompt } from '../utils/imageApi';
 import CharacterSelect from '../components/CharacterSelect';
+import { sfxTap, sfxConfirm, sfxNav, sfxWarn } from '../utils/sounds';
 import './ScriptPage.less';
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -90,6 +91,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
   const [frames, setFrames] = useState<Record<string, ShotFrames>>({});
   const [cooldown, setCooldown] = useState(0);
   const [charSelectFor, setCharSelectFor] = useState<string | null>(null);
+  const [activeNav, setActiveNav] = useState(0);
 
   useEffect(() => subscribeCooldown(setCooldown), []);
 
@@ -212,7 +214,10 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
   };
 
   // Enrich shots with generated URLs before handing off to Drama.tsx
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const handleGenerate = () => {
+    sfxConfirm();
+    setIsSubmitting(true);
     const enriched = shots.map(s => ({
       ...s,
       startImageUrl: frames[s.id]?.start.url,
@@ -229,7 +234,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
   return (
     <div className="ad-script">
       <div className="ad-script__header">
-        <button className="ad-script__back" onPointerDown={onBack}>←</button>
+        <button className="ad-script__back" onPointerDown={() => { sfxNav(); onBack(); }}>←</button>
         <span className="ad-script__title">{t('script.title')}</span>
       </div>
 
@@ -240,8 +245,10 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
           return (
             <button
               key={shot.id}
-              className={`ad-script__nav-item${i === 0 ? ' ad-script__nav-item--active' : ''}${hasFill && i > 0 ? ' ad-script__nav-item--filled' : ''}`}
+              className={`ad-script__nav-item${i === activeNav ? ' ad-script__nav-item--active' : ''}${hasFill && i !== activeNav ? ' ad-script__nav-item--filled' : ''}`}
               onPointerDown={() => {
+                sfxNav();
+                setActiveNav(i);
                 const el = document.getElementById(`shot-${shot.id}`);
                 el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
@@ -252,7 +259,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
           );
         })}
         {shots.length < 8 && (
-          <button className="ad-script__nav-item ad-script__nav-item--add" onPointerDown={addShot}>+</button>
+          <button className="ad-script__nav-item ad-script__nav-item--add" onPointerDown={() => { sfxTap(); addShot(); }}>+</button>
         )}
       </div>
 
@@ -273,7 +280,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
               <div className="ad-shot__header-row">
                 <span className="ad-shot__num">SCENE {i + 1}</span>
                 {shots.length > 1 && (
-                  <button className="ad-shot__remove" onClick={() => removeShot(shot.id)}>✕</button>
+                  <button className="ad-shot__remove" onClick={() => { sfxWarn(); removeShot(shot.id); }}>✕</button>
                 )}
               </div>
               <div
@@ -339,6 +346,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
                           className={`ad-shot__frame-btn ${!isStart ? 'ad-shot__frame-btn--dim' : ''} ${frame.phase === 'waiting' || ((frame.phase === 'idle' || frame.phase === 'error') && cooldown > 0) ? 'ad-shot__frame-btn--queued' : ''}`}
                           onClick={() => {
                             if (!busy) {
+                              sfxConfirm();
                               const shotChar = resolveShotChar(shot, shots, defaultCharacter);
                               generateFrame(shot.id, shot.prompt, type, shotChar, { cancelled: false });
                             }
@@ -357,7 +365,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
               {showUsePrev && (
                 <button
                   className="ad-shot__use-prev"
-                  onClick={() => patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl })}
+                  onClick={() => { sfxTap(); patchFrame(shot.id, 'start', { phase: 'idle', wait: 0, url: prevEndUrl }); }}
                 >
                   &larr; {t('script.usePrevEnd')}
                 </button>
@@ -380,7 +388,7 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
               />
               <div className="ad-shot__hints">
                 {SHOT_PRESETS.slice(i * 2, i * 2 + 2).map(p => (
-                  <span key={p} className="ad-shot__hint" onClick={() => updatePrompt(shot.id, p)}>
+                  <span key={p} className="ad-shot__hint" onClick={() => { sfxTap(); updatePrompt(shot.id, p); }}>
                     {p}
                   </span>
                 ))}
@@ -399,11 +407,13 @@ export default function ScriptPage({ aigram, defaultCharacter, shots, onShotsCha
 
       <div className="ad-script__footer">
         <button
-          className="ad-generate-btn"
+          className={`ad-generate-btn${isSubmitting ? ' ad-generate-btn--loading' : ''}`}
           onPointerDown={handleGenerate}
-          disabled={!canGenerate}
+          disabled={!canGenerate || isSubmitting}
         >
-          {t('script.go')} {activeCount} {t('script.shots')}
+          {isSubmitting
+            ? <><span className="ad-generate-btn__spinner" />{t('script.go')}</>
+            : <>{t('script.go')} {activeCount} {t('script.shots')}</>}
         </button>
       </div>
 
