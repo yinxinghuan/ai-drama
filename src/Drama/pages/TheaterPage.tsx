@@ -141,7 +141,13 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
       {playable.map((s, i) => (
         <video
           key={s.videoUrl}
-          ref={el => { videoRefs.current[i] = el; }}
+          ref={el => {
+            videoRefs.current[i] = el;
+            // Trigger play when the current video's ref is first bound
+            if (el && i === current) {
+              el.play().catch(() => {});
+            }
+          }}
           className={`ad-theater__video${i === current ? ' ad-theater__video--active' : ''}${fitMode === 'contain' ? ' ad-theater__video--contain' : ''}`}
           src={s.videoUrl}
           preload="auto"
