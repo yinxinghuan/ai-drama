@@ -5,6 +5,7 @@ import { useAigram, enrichCharacter } from './hooks/useAigram';
 import { generateSceneImage, enhancePrompt, rehostImage } from './utils/imageApi';
 import { submitVideo, pollVideoTask, waitForVideoCooldown, markVideoCallStart } from './utils/videoApi';
 import { saveWork } from './utils/works';
+import { useGameScore } from '@shared/leaderboard';
 import HomePage from './pages/HomePage';
 import ScriptPage from './pages/ScriptPage';
 import GeneratingPage from './pages/GeneratingPage';
@@ -37,6 +38,7 @@ function buildPrompt(userPrompt: string, character: Character | null): string {
 
 export default function Drama() {
   const aigram = useAigram();
+  const { submitScore } = useGameScore('ai-drama');
   const [phase, setPhase] = useState<Phase>('home');
   const [prevPhase, setPrevPhase] = useState<Phase>('generating');
   const [genBackPhase, setGenBackPhase] = useState<Phase>('home');
@@ -166,7 +168,14 @@ export default function Drama() {
         setShots(prev => { saveCurrentWork(prev); return prev; });
       }
     }
-  }, [defaultCharacter, submitShotJob, pollShot, updateShot, saveCurrentWork, aigram.me?.telegram_id]);
+
+    // Submit leaderboard score: number of completed shots
+    setShots(prev => {
+      const doneCount = prev.filter(s => s.status === 'done').length;
+      if (doneCount > 0) submitScore(doneCount);
+      return prev;
+    });
+  }, [defaultCharacter, submitShotJob, pollShot, updateShot, saveCurrentWork, aigram.me?.telegram_id, submitScore]);
 
   const handleRegenShot = useCallback(async (shotId: string) => {
     const shot = shots.find(s => s.id === shotId);
