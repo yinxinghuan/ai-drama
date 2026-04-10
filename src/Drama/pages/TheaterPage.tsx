@@ -10,13 +10,14 @@ interface Props {
   onBack: () => void;
   onRestart: () => void;
   onRegenShot: (shotId: string) => void;
+  shareMode?: boolean;
 }
 
 function resolveChar(shot: Shot, shots: Shot[], defaultChar: Character | null): Character | null {
   return shot.character ?? shots[0]?.character ?? defaultChar;
 }
 
-export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart, onRegenShot }: Props) {
+export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart, onRegenShot, shareMode }: Props) {
   const playable = shots.filter(s => s.status === 'done' && s.videoUrl);
   const [current, setCurrent] = useState(0);
   const [showControls, setShowControls] = useState(true);
@@ -35,16 +36,20 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
 
   // Play current, pause others
   useEffect(() => {
-    videoRefs.current.forEach((v, i) => {
-      if (!v) return;
-      if (i === current) {
-        v.currentTime = 0;
-        v.play().catch(() => {});
-      } else {
-        v.pause();
-      }
-    });
-  }, [current]);
+    // Small delay to ensure refs are bound after render
+    const timer = setTimeout(() => {
+      videoRefs.current.forEach((v, i) => {
+        if (!v) return;
+        if (i === current) {
+          v.currentTime = 0;
+          v.play().catch(() => {});
+        } else {
+          v.pause();
+        }
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [current, playable.length]);
 
   // ── Show controls + indicator together ─────────────────────────────────
   const showAll = useCallback((idx?: number) => {
@@ -149,7 +154,7 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
       <div className={`ad-theater__overlay${showControls ? ' ad-theater__overlay--show' : ''}`}>
         {/* Top */}
         <div className="ad-theater__top">
-          <button className="ad-theater__back" onPointerDown={(e) => { e.stopPropagation(); sfxNav(); onBack(); }}>←</button>
+          {!shareMode && <button className="ad-theater__back" onPointerDown={(e) => { e.stopPropagation(); sfxNav(); onBack(); }}>←</button>}
           {(() => {
             const ch = shot ? resolveChar(shot, shots, defaultCharacter) : null;
             return ch ? (
@@ -206,20 +211,22 @@ export default function TheaterPage({ shots, defaultCharacter, onBack, onRestart
               />
             ))}
           </div>
-          <div className="ad-theater__actions">
-            <button className="ad-theater__regen ad-theater__regen--current" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); onRegenShot(shot.id); }}>
-              {t('theater.regenCurrent')}
-            </button>
-            {failedShots.map(s => (
-              <button key={s.id} className="ad-theater__regen" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); onRegenShot(s.id); }}>
-                {t('theater.regenFailed')} {shots.indexOf(s) + 1}（{t('theater.failed')}）
+          {!shareMode && (
+            <div className="ad-theater__actions">
+              <button className="ad-theater__regen ad-theater__regen--current" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); onRegenShot(shot.id); }}>
+                {t('theater.regenCurrent')}
               </button>
-            ))}
-            <button className="ad-theater__share" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); handleShare(); }}>
-              {t('theater.share')}
-            </button>
-            <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); sfxNav(); onRestart(); }}>{t('theater.reDirector')}</button>
-          </div>
+              {failedShots.map(s => (
+                <button key={s.id} className="ad-theater__regen" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); onRegenShot(s.id); }}>
+                  {t('theater.regenFailed')} {shots.indexOf(s) + 1}（{t('theater.failed')}）
+                </button>
+              ))}
+              <button className="ad-theater__share" onPointerDown={(e) => { e.stopPropagation(); sfxTap(); handleShare(); }}>
+                {t('theater.share')}
+              </button>
+              <button className="ad-theater__restart" onPointerDown={(e) => { e.stopPropagation(); sfxNav(); onRestart(); }}>{t('theater.reDirector')}</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

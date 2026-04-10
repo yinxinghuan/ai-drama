@@ -44,6 +44,7 @@ export default function Drama() {
   const [genBackPhase, setGenBackPhase] = useState<Phase>('home');
   const [defaultCharacter, setDefaultCharacter] = useState<Character | null>(null);
   const [shots, setShots] = useState<Shot[]>(INITIAL_SHOTS);
+  const [isShareMode, setIsShareMode] = useState(false);
 
   // Stable work ID for the current generation session, used for incremental saves
   const currentWorkId = useRef<string | null>(null);
@@ -81,6 +82,7 @@ export default function Drama() {
         currentWorkId.current = work.id;
         currentCharacter.current = work.character;
         setShots(work.shots);
+        setIsShareMode(true);
         setPrevPhase('home');
         setPhase('theater');
 
@@ -333,6 +335,7 @@ export default function Drama() {
           onBack={() => setPhase(prevPhase)}
           onRestart={handleRestart}
           onRegenShot={handleRegenShot}
+          shareMode={isShareMode}
         />
       )}
     </div>
