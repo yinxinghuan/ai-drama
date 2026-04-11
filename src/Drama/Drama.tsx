@@ -47,10 +47,12 @@ export default function Drama() {
   const [defaultCharacter, setDefaultCharacter] = useState<Character | null>(null);
   const [shots, setShots] = useState<Shot[]>(INITIAL_SHOTS);
   const [isShareMode, setIsShareMode] = useState(false);
+  const [hasPendingWork, setHasPendingWork] = useState(false);
 
   // Stable work ID for the current generation session, used for incremental saves
   const currentWorkId = useRef<string | null>(null);
   const currentCharacter = useRef<Character | null>(null);
+  const pendingWorkRef = useRef<Work | null>(null);
 
   // Auto-set default character from aigram.me
   useEffect(() => {
@@ -89,6 +91,31 @@ export default function Drama() {
       window.history.replaceState({}, '', window.location.pathname);
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Check for in-progress work on mount (resume after app close) ───────────
+  useEffect(() => {
+    if (hasShareParam) return;
+    let cancelled = false;
+    const check = async () => {
+      const uid = aigram.me?.telegram_id;
+      let works: Work[];
+      try {
+        works = uid ? await loadWorksRemote(uid) : loadWorksLocal();
+      } catch {
+        works = loadWorksLocal();
+      }
+      if (cancelled) return;
+      const pending = works.find(w =>
+        w.shots.some(s => s.taskId && !s.videoUrl),
+      );
+      if (pending) {
+        pendingWorkRef.current = pending;
+        setHasPendingWork(true);
+      }
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [aigram.me?.telegram_id, hasShareParam]);
 
   const goTheater = (from: Phase) => { setPrevPhase(from); setPhase('theater'); };
 
@@ -299,8 +326,18 @@ export default function Drama() {
           onFreeCreate={handleFreeCreate}
           onOpenWorks={() => setPhase('works')}
           onChangeDefaultCharacter={handleChangeDefaultCharacter}
-          isGenerating={isGenerating}
-          onResumeGenerating={() => { setGenBackPhase('home'); setPhase('generating'); }}
+          isGenerating={isGenerating || hasPendingWork}
+          onResumeGenerating={() => {
+            if (pendingWorkRef.current && !isGenerating) {
+              handleResumeWork(pendingWorkRef.current);
+              setGenBackPhase('home');
+              pendingWorkRef.current = null;
+              setHasPendingWork(false);
+            } else {
+              setGenBackPhase('home');
+              setPhase('generating');
+            }
+          }}
         />
       )}
       {phase === 'works' && (
