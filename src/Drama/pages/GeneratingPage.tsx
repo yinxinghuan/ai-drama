@@ -20,10 +20,6 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
   const isGenerating = active.some(s => ['imaging', 'waiting', 'generating'].includes(s.status));
   const hasRemaining = active.some(s => s.status === 'idle' || s.status === 'error');
 
-  // Preload videos once all settled
-  const [loadedCount, setLoadedCount] = useState(0);
-  const allPreloaded = successShots.length > 0 && loadedCount >= successShots.length;
-
   // Single shot video preview
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -42,22 +38,7 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
     }
   }, [activeGeneratingIndex]);
 
-  // Collect video URLs for preloading — stable string key
-  const videoUrls = successShots.map(s => s.videoUrl!).join(',');
-
-  useEffect(() => {
-    if (!allSettled || successShots.length === 0) return;
-    setLoadedCount(0);
-    let count = 0;
-    const urls = videoUrls.split(',').filter(Boolean);
-    urls.forEach(url => {
-      const v = document.createElement('video');
-      v.preload = 'auto';
-      v.oncanplaythrough = () => { count++; setLoadedCount(count); };
-      v.onerror = () => { count++; setLoadedCount(count); };
-      v.src = url;
-    });
-  }, [allSettled, videoUrls]); // eslint-disable-line react-hooks/exhaustive-deps
+  const canPreview = successShots.length > 0 && !isGenerating;
 
   const progress = active.length > 0 ? Math.round((doneCount / active.length) * 100) : 0;
   const selectedShot = active[selectedIndex] ?? active[0];
@@ -177,16 +158,14 @@ export default function GeneratingPage({ shots, onRegen, onContinue, onPreview, 
           </button>
         )}
 
-        {/* Preview button — as soon as any shots are done */}
+        {/* Preview button — available when shots are done and not generating */}
         {successShots.length > 0 && (
           <button
-            className={`ad-gen__preview-btn${allPreloaded ? '' : ' ad-gen__preview-btn--loading'}`}
-            onPointerDown={allPreloaded ? () => { sfxConfirm(); onPreview(); } : undefined}
-            disabled={!allPreloaded}
+            className={`ad-gen__preview-btn${canPreview ? '' : ' ad-gen__preview-btn--loading'}`}
+            onPointerDown={canPreview ? () => { sfxConfirm(); onPreview(); } : undefined}
+            disabled={!canPreview}
           >
-            {allPreloaded
-              ? `▶ ${t('gen.preview')}（${successShots.length} ${t('script.shots')}）`
-              : `${t('gen.loading')} ${loadedCount} / ${successShots.length}…`}
+            ▶ {t('gen.preview')}（{successShots.length} {t('script.shots')}）
           </button>
         )}
 
