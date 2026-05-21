@@ -38,7 +38,7 @@ function buildPrompt(userPrompt: string, character: Character | null): string {
 
 export default function Drama() {
   const aigram = useAigram();
-  const { submitScore } = useGameScore('ai-drama');
+  const { submitScore } = useGameScore();
   // Detect share link synchronously to avoid flashing home page
   const hasShareParam = new URLSearchParams(window.location.search).has('work');
   const [phase, setPhase] = useState<Phase>(hasShareParam ? 'loading' : 'home');

@@ -33,7 +33,7 @@ export default function HomePage({
   const [activeTab, setActiveTab] = useState<TemplateCategory>('all');
   const [showCharSelect, setShowCharSelect] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const { isInAigram, fetchGlobalLeaderboard, fetchFriendsLeaderboard } = useGameScore('ai-drama');
+  const { isInAigram, fetchLeaderboard } = useGameScore();
 
   const filtered = activeTab === 'all'
     ? DRAMA_TEMPLATES
@@ -140,8 +140,7 @@ export default function HomePage({
           gameName="AI DRAMA"
           isInAigram={isInAigram}
           onClose={() => setShowLeaderboard(false)}
-          fetchGlobal={fetchGlobalLeaderboard}
-          fetchFriends={fetchFriendsLeaderboard}
+          fetch={fetchLeaderboard}
         />
       )}
     </div>
