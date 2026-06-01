@@ -29,7 +29,7 @@ Worker Secrets（wrangler secret put 配置，不在代码里）：`GLM_API_KEY`
 
 ## 生成冷却
 
-- 图像生成：20s 冷却（`imageApi.ts` COOLDOWN_MS）
+- 图像生成：2s 冷却（`imageApi.ts` COOLDOWN_MS）— 服务端限速 ~1s/IP (2026-06-01)，2s 留缓冲
 - 视频生成：100s 冷却（`videoApi.ts` COOLDOWN_MS）
 
 ## 作品存档

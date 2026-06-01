@@ -90,10 +90,11 @@ export async function rehostImage(tempUrl: string): Promise<string> {
   return data.url;
 }
 
-const COOLDOWN_MS = 20_000;
+const COOLDOWN_MS = 2_000;
 
 // Serial queue for scheduling only — HTTP fetches run concurrently outside the queue.
-// First call always fires immediately; subsequent calls wait only if within 20s of the last send.
+// First call always fires immediately; subsequent calls wait only if within 2s of the last send.
+// Server rate limit is ~1s/IP as of 2026-06-01 (was 20s when this queue was designed); 2s adds jitter buffer.
 let lastSendTime = 0;
 let sendQueue: Promise<void> = Promise.resolve();
 
