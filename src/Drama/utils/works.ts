@@ -7,7 +7,7 @@ const WORKS_API = 'https://ai-drama-image-proxy.xinghuan-yin.workers.dev/works';
 
 export function loadWorksLocal(): Work[] {
   try {
-    return JSON.parse(localStorage.getItem(LOCAL_KEY) ?? '[]');
+    return JSON.parse(alteruLocalStorage.getItem(LOCAL_KEY) ?? '[]');
   } catch {
     return [];
   }
@@ -18,12 +18,12 @@ function saveWorkLocal(work: Work): void {
   const idx = works.findIndex(w => w.id === work.id);
   if (idx >= 0) works[idx] = work;
   else works.unshift(work);
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(works));
+  alteruLocalStorage.setItem(LOCAL_KEY, JSON.stringify(works));
 }
 
 function deleteWorkLocal(id: string): void {
   const works = loadWorksLocal().filter(w => w.id !== id);
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(works));
+  alteruLocalStorage.setItem(LOCAL_KEY, JSON.stringify(works));
 }
 
 // ── Cloud (OSS via Worker) ────────────────────────────────────────────────────
